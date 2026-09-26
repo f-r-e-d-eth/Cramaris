@@ -260,6 +260,7 @@ const toggleMasterPassword = document.getElementById("toggleMasterPassword");
 const toggleSecondaryKey = document.getElementById("toggleSecondaryKey");
 const cryptoToggle = document.getElementById("cryptoToggle");
 const chooseFolderButton = document.getElementById("chooseFolderButton");
+const newFileButton = document.getElementById("newFileButton");
 
 let cryptoEnabled = true;
 
@@ -584,6 +585,42 @@ cryptoToggle.addEventListener("click", async () => {
   updateCryptoToggle();
   render();
 });
+
+newFileButton.addEventListener("click", async () => {
+  const filename = window.prompt("New file name:");
+
+  if (!filename) {
+    return;
+  }
+
+  const response = await fetch("/api/file", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: filename
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    window.alert(data.error || "Could not create file.");
+    return;
+  }
+
+  activeFile = data.name;
+  editingLineIndex = null;
+
+  delete editedFiles[activeFile];
+  delete realFileLines[activeFile];
+  delete decryptedFileLines[activeFile];
+  delete decryptErrors[activeFile];
+
+  await loadVault();
+});
+
 
 chooseFolderButton.addEventListener("click", async () => {
   const requestedPath = window.prompt(
