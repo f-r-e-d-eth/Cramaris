@@ -1,4 +1,8 @@
+import base64
+import hashlib
+import hmac
 import json
+import os
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -14,6 +18,16 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 IGNORED_NAMES = {".endecrypt.json"}
 IGNORED_EXTENSIONS = {".py", ".pyc"}
+
+ALPHABET = (
+    "0123456789"
+    "abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    " +-*/!.,:;()[]{}_?=@#$%&"
+)
+N = len(ALPHABET)
+CHAR_TO_NUM = {char: index for index, char in enumerate(ALPHABET)}
+NUM_TO_CHAR = {index: char for index, char in enumerate(ALPHABET)}
 
 app = Flask(__name__)
 
@@ -86,10 +100,12 @@ def scan_vault(vault_dir):
             continue
 
         try:
-            line_count = len(path.read_text(
-                encoding="utf-8",
-                errors="replace",
-            ).splitlines())
+            line_count = len(
+                path.read_text(
+                    encoding="utf-8",
+                    errors="replace",
+                ).splitlines()
+            )
         except OSError:
             line_count = 0
 
@@ -102,12 +118,10 @@ def scan_vault(vault_dir):
 
 
 def read_text_lines(path):
-    text = path.read_text(
+    return path.read_text(
         encoding="utf-8",
         errors="replace",
-    )
-
-    return text.splitlines()
+    ).splitlines()
 
 
 def write_text_lines(path, lines):
@@ -120,6 +134,126 @@ def write_text_lines(path, lines):
         text,
         encoding="utf-8",
     )
+
+
+def combined_credential(master_password, key):
+    return master_password + "\0" + key
+
+
+def password_to_key(password):
+    return hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        b"LineCipherExperiment-v1",
+        200_000,
+        dklen=32,
+    )
+
+
+def make_keystream(key, nonce, length):
+    result = bytearray()
+    counter = 0
+
+    while len(result) < length:
+        message = nonce + counter.to_bytes(8, "big")
+        result.extend(
+            hmac.new(
+                key,
+                message,
+                hashlib.sha256,
+            ).digest()
+        )
+        counter += 1
+
+    return result[:length]
+
+
+def validate_plaintext(text):
+    for char in text:
+        if char not in CHAR_TO_NUM:
+            raise ValueError(
+                f"Unsupported character {char!r}. "
+                "Encrypted lines may only use the configured EnDeCrypt alphabet."
+            )
+
+
+def encrypt_line(text, password):
+    validate_plaintext(text)
+
+    nonce = os.urandom(16)
+    key = password_to_key(password)
+    stream = make_keystream(key, nonce, len(text))
+
+    encrypted = []
+
+    for char, random_byte in zip(text, stream):
+        plain_number = CHAR_TO_NUM[char]
+        key_number = random_byte % N
+        encrypted_number = (plain_number + key_number) % N
+        encrypted.append(NUM_TO_CHAR[encrypted_number])
+
+    nonce_text = base64.urlsafe_b64encode(nonce).decode("ascii")
+    return nonce_text + "|" + "".join(encrypted)
+
+
+def decrypt_line(line, password):
+    if "|" not in line:
+        raise ValueError("missing nonce separator '|'")
+
+    nonce_text, encrypted = line.split("|", 1)
+
+    if not nonce_text:
+        raise ValueError("missing nonce")
+
+    try:
+        nonce = base64.urlsafe_b64decode(
+            nonce_text.encode("ascii"),
+        )
+    except (ValueError, UnicodeError) as error:
+        raise ValueError("invalid nonce encoding") from error
+
+    if len(nonce) != 16:
+        raise ValueError(
+            f"invalid nonce length ({len(nonce)} bytes, expected 16)"
+        )
+
+    for char in encrypted:
+        if char not in CHAR_TO_NUM:
+            raise ValueError(
+                f"ciphertext contains unsupported character {char!r}"
+            )
+
+    key = password_to_key(password)
+    stream = make_keystream(key, nonce, len(encrypted))
+
+    decrypted = []
+
+    for char, random_byte in zip(encrypted, stream):
+        encrypted_number = CHAR_TO_NUM[char]
+        key_number = random_byte % N
+        plain_number = (encrypted_number - key_number) % N
+        decrypted.append(NUM_TO_CHAR[plain_number])
+
+    return "".join(decrypted)
+
+
+def decrypt_file_lines(path, password):
+    raw_lines = read_text_lines(path)
+    result = []
+
+    for index, raw_line in enumerate(raw_lines, start=1):
+        try:
+            result.append({
+                "text": decrypt_line(raw_line, password),
+                "error": None,
+            })
+        except (ValueError, UnicodeError) as error:
+            result.append({
+                "text": f"[ENCRYPTION ERROR: line {index}: {error}]",
+                "error": str(error),
+            })
+
+    return result
 
 
 @app.get("/")
@@ -179,8 +313,13 @@ def write_file(filename):
     data = request.get_json(silent=True) or {}
     lines = data.get("lines")
 
-    if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
-        return jsonify({"error": "Expected a list of text lines."}), 400
+    if not isinstance(lines, list) or not all(
+        isinstance(line, str)
+        for line in lines
+    ):
+        return jsonify({
+            "error": "Expected a list of text lines."
+        }), 400
 
     try:
         path = safe_vault_file(filename)
@@ -194,6 +333,95 @@ def write_file(filename):
         "ok": True,
         "name": path.name,
         "lines": len(lines),
+    })
+
+
+@app.post("/api/crypt/<path:filename>/view")
+def crypt_view(filename):
+    data = request.get_json(silent=True) or {}
+    master_password = str(data.get("master_password", ""))
+    secondary_key = str(data.get("key", ""))
+    password = combined_credential(
+        master_password,
+        secondary_key,
+    )
+
+    try:
+        path = safe_vault_file(filename)
+        lines = decrypt_file_lines(path, password)
+    except (ValueError, FileNotFoundError):
+        return jsonify({"error": "File not found."}), 404
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    error_count = sum(
+        1 for line in lines
+        if line["error"] is not None
+    )
+
+    return jsonify({
+        "name": path.name,
+        "lines": lines,
+        "error_count": error_count,
+    })
+
+
+@app.post("/api/crypt/<path:filename>/line")
+def crypt_line(filename):
+    data = request.get_json(silent=True) or {}
+    action = data.get("action")
+    index = data.get("index")
+    text = data.get("text", "")
+    master_password = str(data.get("master_password", ""))
+    secondary_key = str(data.get("key", ""))
+    password = combined_credential(
+        master_password,
+        secondary_key,
+    )
+
+    if not isinstance(index, int):
+        return jsonify({"error": "Invalid line index."}), 400
+
+    try:
+        path = safe_vault_file(filename)
+        raw_lines = read_text_lines(path)
+
+        if action == "update":
+            if index < 0 or index >= len(raw_lines):
+                return jsonify({"error": "Line index out of range."}), 400
+
+            raw_lines[index] = encrypt_line(str(text), password)
+
+        elif action == "insert":
+            if index < 0 or index > len(raw_lines):
+                return jsonify({"error": "Line index out of range."}), 400
+
+            raw_lines.insert(
+                index,
+                encrypt_line(str(text), password),
+            )
+
+        elif action == "delete":
+            if index < 0 or index >= len(raw_lines):
+                return jsonify({"error": "Line index out of range."}), 400
+
+            raw_lines.pop(index)
+
+        else:
+            return jsonify({"error": "Unknown line action."}), 400
+
+        write_text_lines(path, raw_lines)
+
+    except (ValueError, UnicodeError) as error:
+        return jsonify({"error": str(error)}), 400
+    except FileNotFoundError:
+        return jsonify({"error": "File not found."}), 404
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify({
+        "ok": True,
+        "lines": len(raw_lines),
     })
 
 
