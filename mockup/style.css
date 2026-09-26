@@ -1,6 +1,8 @@
 :root {
   --bg: #06070a;
   --glass-alpha: 0.55;
+  --text-user: #d8eef5;
+  --file-user: #ff4fd8;
   --panel: rgba(12, 15, 22, 0.92);
   --panel-2: rgba(18, 21, 31, 0.9);
   --cyan: #55f3ff;
@@ -231,8 +233,7 @@ h1 {
 }
 
 .filename {
-  color: var(--magenta);
-  font-size: 15px;
+  color: var(--file-user);\n  font-size: 15px;
   margin-bottom: 4px;
 }
 
@@ -277,7 +278,7 @@ h1 {
 .line-text {
   white-space: pre-wrap;
   word-break: break-word;
-  color: #d8eef5;
+  color: var(--text-user);
 }
 
 .line-text.gibberish {
@@ -375,7 +376,7 @@ h1 {
 }
 
 
-.transparency-control {
+.appearance-control {
   margin: 0 0 14px;
   padding: 12px;
   border: 1px solid rgba(85,243,255,.18);
@@ -398,5 +399,39 @@ h1 {
 #transparencySlider {
   width: 100%;
   accent-color: var(--cyan);
+  cursor: pointer;
+}
+
+
+.action-button.compact {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 10px;
+  padding: 8px 10px;
+}
+
+.color-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.color-row label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .10em;
+}
+
+.color-row input[type="color"] {
+  width: 34px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(85,243,255,.25);
+  background: transparent;
   cursor: pointer;
 }
