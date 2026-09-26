@@ -137,7 +137,7 @@ def write_text_lines(path, lines):
 
 
 def combined_credential(master_password, key):
-    return master_password + "\0" + key
+    return master_password + key
 
 
 def password_to_key(password):
