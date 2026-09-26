@@ -632,3 +632,42 @@ h1 {
   color: #ff7ca8;
   border-color: rgba(255,124,168,.35);
 }
+
+
+/* Refined inline editor layout */
+.line.editing {
+  display: block;
+}
+
+.line-editor-main {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.line-editor-number {
+  color: #49606e;
+  text-align: right;
+  padding-top: 10px;
+  user-select: none;
+}
+
+.line-editor-body {
+  min-width: 0;
+}
+
+.line-editor-hint {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.line-editor-actions {
+  margin-left: 54px;
+  margin-top: 9px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
