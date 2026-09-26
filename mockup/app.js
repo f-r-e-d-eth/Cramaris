@@ -205,6 +205,7 @@ function savePreferences() {
       background: selectedBackgroundId
     })
   );
+  updateFileListColors();
 }
 
 function applyAppearance(save = true) {
@@ -234,6 +235,24 @@ function applyAppearance(save = true) {
   if (save) savePreferences();
 }
 
+function updateFileListColors() {
+  document.querySelectorAll(".file-item").forEach(button => {
+    const filename = button.dataset.file;
+
+    const saved = JSON.parse(
+      localStorage.getItem(preferenceKey(filename)) || "{}"
+    );
+
+    const color = saved.fileColor || "#ff4fd8";
+
+    const nameElement = button.querySelector("span");
+
+    if (nameElement) {
+      nameElement.style.color = color;
+    }
+  });
+}
+
 backgroundButton.addEventListener("click", () => {
   const currentIndex = getCurrentBackgroundIndex();
   const nextIndex = (currentIndex + 1) % backgroundOptions.length;
@@ -252,3 +271,4 @@ document.querySelectorAll(".file-item").forEach(button => {
 });
 
 loadPreferences();
+updateFileListColors();
