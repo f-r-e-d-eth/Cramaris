@@ -486,10 +486,22 @@ function updateCryptoToggle() {
   cryptoToggle.classList.toggle("active", cryptoEnabled);
 }
 
-cryptoToggle.addEventListener("click", () => {
+cryptoToggle.addEventListener("click", async () => {
   cryptoEnabled = !cryptoEnabled;
   localStorage.setItem("endecrypt-demo:crypto-enabled", cryptoEnabled);
+
+  if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
+    try {
+      await loadRealFile(activeFile);
+    } catch (error) {
+      console.error(error);
+      statusText.textContent = error.message;
+    }
+  }
+
   updateCryptoToggle();
+  render();
+});
 
 chooseFolderButton.addEventListener("click", async () => {
   const requestedPath = window.prompt(
@@ -524,8 +536,6 @@ chooseFolderButton.addEventListener("click", async () => {
   Object.keys(realFileLines).forEach(key => delete realFileLines[key]);
 
   await loadVault();
-});
-  render();
 });
 
 updateCryptoToggle();
