@@ -155,14 +155,24 @@ const textColor = document.getElementById("textColor");
 const fileColor = document.getElementById("fileColor");
 
 const backgroundOptions = [
-  "assets/background-cyberpunk-room.png",
-  "none"
+  { id: "dark", label: "DARK", url: null },
+  { id: "background-cyberpunk-room.png", label: "BG 1", url: "assets/background-cyberpunk-room.png" },
+  { id: "background-cyberpunk-room_2.png", label: "BG 2", url: "assets/background-cyberpunk-room_2.png" },
+  { id: "background-cyberpunk-room_3.png", label: "BG 3", url: "assets/background-cyberpunk-room_3.png" }
 ];
 
-let backgroundIndex = 0;
+let selectedBackgroundId = "background-cyberpunk-room.png";
 
 function preferenceKey(filename) {
   return "endecrypt-demo:" + filename;
+}
+
+function getBackgroundById(id) {
+  return backgroundOptions.find(bg => bg.id === id) || null;
+}
+
+function getCurrentBackgroundIndex() {
+  return backgroundOptions.findIndex(bg => bg.id === selectedBackgroundId);
 }
 
 function loadPreferences() {
@@ -171,7 +181,16 @@ function loadPreferences() {
   if (saved.glass !== undefined) transparencySlider.value = saved.glass;
   if (saved.textColor) textColor.value = saved.textColor;
   if (saved.fileColor) fileColor.value = saved.fileColor;
-  if (saved.backgroundIndex !== undefined) backgroundIndex = saved.backgroundIndex;
+  if (saved.background) selectedBackgroundId = saved.background;
+
+  // Fallback if saved background no longer exists
+  if (!getBackgroundById(selectedBackgroundId)) {
+    if (backgroundOptions.length > 0) {
+      selectedBackgroundId = backgroundOptions[0].id;
+    } else {
+      selectedBackgroundId = "dark";
+    }
+  }
 
   applyAppearance(false);
 }
@@ -183,7 +202,7 @@ function savePreferences() {
       glass: Number(transparencySlider.value),
       textColor: textColor.value,
       fileColor: fileColor.value,
-      backgroundIndex
+      background: selectedBackgroundId
     })
   );
 }
@@ -194,25 +213,31 @@ function applyAppearance(save = true) {
   document.documentElement.style.setProperty("--text-user", textColor.value);
   document.documentElement.style.setProperty("--file-user", fileColor.value);
 
-  const selected = backgroundOptions[backgroundIndex];
-  if (selected === "none") {
-    document.body.style.backgroundImage =
+  let selected = getBackgroundById(selectedBackgroundId);
+
+  // Fallback if a background was removed
+  if (!selected) {
+    selected = backgroundOptions[0] || { id: "dark", label: "DARK", url: null };
+    selectedBackgroundId = selected.id;
+  }
+
+  if (!selected.url) {
+    document.body.style.background =
       "linear-gradient(135deg, #040507 0%, #090b12 55%, #080510 100%)";
-    backgroundButton.textContent = "BACKGROUND: DARK";
+    backgroundButton.textContent = "BACKGROUND: " + selected.label;
   } else {
-    document.body.style.backgroundImage =
-      'linear-gradient(rgba(2,5,10,.28), rgba(2,5,10,.42)), url("' + selected + '")';
-    document.body.style.backgroundPosition = "center center";
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundAttachment = "fixed";
-    backgroundButton.textContent = "BACKGROUND: IMAGE";
+    document.body.style.background =
+      'linear-gradient(rgba(2,5,10,.28), rgba(2,5,10,.42)), url("' + selected.url + '") center center / cover fixed no-repeat';
+    backgroundButton.textContent = "BACKGROUND: " + selected.label;
   }
 
   if (save) savePreferences();
 }
 
 backgroundButton.addEventListener("click", () => {
-  backgroundIndex = (backgroundIndex + 1) % backgroundOptions.length;
+  const currentIndex = getCurrentBackgroundIndex();
+  const nextIndex = (currentIndex + 1) % backgroundOptions.length;
+  selectedBackgroundId = backgroundOptions[nextIndex].id;
   applyAppearance();
 });
 
