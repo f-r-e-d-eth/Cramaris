@@ -23,9 +23,13 @@ async function loadVault() {
     activeFile = vaultFiles.length ? vaultFiles[0].name : null;
   }
 
-  if (activeFile && !demoFiles[activeFile]) {
+  if (activeFile) {
     try {
-      await loadRealFile(activeFile);
+      if (cryptoEnabled) {
+        await loadEncryptedFile(activeFile);
+      } else {
+        await loadRealFile(activeFile);
+      }
     } catch (error) {
       console.error(error);
       statusText.textContent = error.message;
@@ -67,13 +71,15 @@ function renderFileList() {
       activeFile = file.name;
       editingLineIndex = null;
 
-      if (!demoFiles[activeFile]) {
-        try {
+      try {
+        if (cryptoEnabled) {
+          await loadEncryptedFile(activeFile);
+        } else {
           await loadRealFile(activeFile);
-        } catch (error) {
-          console.error(error);
-          statusText.textContent = error.message;
         }
+      } catch (error) {
+        console.error(error);
+        statusText.textContent = error.message;
       }
 
       renderFileList();
@@ -88,54 +94,74 @@ function renderFileList() {
   updateFileListColors();
 }
 
-const demoFiles = {
-  "secret.bla": {
-    apple: [
-      "Remember to keep the encryption line-based.",
-      "Each line has its own nonce.",
-      "This one belongs to apple."
-    ],
-    banana: [
-      "qA7!mZ2_xP9",
-      "Lk$2vN8@tR4",
-      "fD3%Qw1*Yp7"
-    ]
-  },
-  "ideas.dat": {
-    apple: [
-      "Browser UI first.",
-      "Python backend second.",
-      "Keep the vault local.",
-      "Make the interface unnecessarily stylish."
-    ],
-    banana: [
-      "Build a second hidden interpretation.",
-      "Different password, different readable lines.",
-      "No password-validity indicator.",
-      "Same file. Different words."
-    ]
-  },
-  "journal.enc": {
-    apple: [
-      "The city outside is loud.",
-      "The editor is quiet.",
-      "That is enough for tonight.",
-      "",
-      "2026-09-26"
-    ],
-    banana: [
-      "mZ#9v Qk*L 7!aP$",
-      "xJ3_pL0@uK8",
-      "8f^rTq$nV!2",
-      "H@l0xF2/qM#",
-      "<different password>"
-    ]
-  }
-};
+const demoFiles = {};
 
 const editedFiles = {};
 const realFileLines = {};
+const decryptedFileLines = {};
+const decryptErrors = {};
 let editingLineIndex = null;
+let decryptRequestSerial = 0;
+let credentialTimer = null;
+
+async function loadEncryptedFile(filename) {
+  const serial = ++decryptRequestSerial;
+
+  const response = await fetch(
+    "/api/crypt/" + encodeURIComponent(filename) + "/view",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        master_password: masterPasswordInput.value,
+        key: secondaryKeyInput.value
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not decrypt file");
+  }
+
+  if (serial !== decryptRequestSerial) {
+    return;
+  }
+
+  decryptedFileLines[filename] = (data.lines || []).map(line => line.text);
+  decryptErrors[filename] = (data.lines || []).map(line => line.error);
+  delete editedFiles[filename];
+}
+
+async function cryptLineAction(action, index, text = "") {
+  const response = await fetch(
+    "/api/crypt/" + encodeURIComponent(activeFile) + "/line",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action,
+        index,
+        text,
+        master_password: masterPasswordInput.value,
+        key: secondaryKeyInput.value
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Encrypted line operation failed");
+  }
+
+  await loadEncryptedFile(activeFile);
+}
 
 async function loadRealFile(filename) {
   const response = await fetch("/api/file/" + encodeURIComponent(filename));
@@ -216,59 +242,26 @@ function pseudoGibberish(text, password) {
 function getVisibleLines() {
   if (!activeFile) {
     return {
-      lines: ["No editable files found in the vault.", "Add a text/encrypted file to the vault folder and refresh."],
-      knownProfile: true,
+      lines: [
+        "No editable files found in the vault.",
+        "Add a text/encrypted file to the vault folder and refresh."
+      ],
+      errors: [],
       plainMode: true
     };
   }
-
-  const profileKey = getProfileKey();
-  const combinedCredential = getCombinedCredential();
-  const file = demoFiles[activeFile];
-
-  if (!file) {
-    const source = realFileLines[activeFile] || [];
-
-    if (!cryptoEnabled) {
-      return {
-        lines: source,
-        knownProfile: true,
-        plainMode: true
-      };
-    }
-
-    const placeholder = source.length
-      ? source
-      : ["Encrypted mode for real files will be connected in Step 4."];
-
-    return {
-      lines: placeholder.map(line => pseudoGibberish(line, combinedCredential)),
-      knownProfile: false,
-      plainMode: false
-    };
-  }
-
-  const source = file.apple || Object.values(file)[0];
 
   if (!cryptoEnabled) {
     return {
-      lines: source,
-      knownProfile: true,
+      lines: realFileLines[activeFile] || [],
+      errors: [],
       plainMode: true
-    };
-  }
-
-  if (masterPasswordInput.value === "master" && file[profileKey]) {
-    return {
-      lines: file[profileKey],
-      knownProfile: true,
-      plainMode: false
     };
   }
 
   return {
-    lines: source.map(line => pseudoGibberish(line, combinedCredential)),
-    knownProfile: false,
+    lines: decryptedFileLines[activeFile] || [],
+    errors: decryptErrors[activeFile] || [],
     plainMode: false
   };
 }
@@ -340,15 +333,17 @@ function render() {
         const mutable = getEditableLinesForActiveFile();
         mutable[index] = input.value;
 
-        if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
-          try {
+        try {
+          if (cryptoEnabled) {
+            await cryptLineAction("update", index, input.value);
+          } else {
             await saveRealFile(activeFile, mutable);
-            await loadVault();
-          } catch (error) {
-            console.error(error);
-            statusText.textContent = error.message;
-            return;
           }
+          await loadVault();
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = error.message;
+          return;
         }
 
         editingLineIndex = null;
@@ -371,15 +366,18 @@ function render() {
         mutable[index] = input.value;
         mutable.splice(index + 1, 0, "");
 
-        if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
-          try {
+        try {
+          if (cryptoEnabled) {
+            await cryptLineAction("update", index, input.value);
+            await cryptLineAction("insert", index + 1, "");
+          } else {
             await saveRealFile(activeFile, mutable);
-            await loadVault();
-          } catch (error) {
-            console.error(error);
-            statusText.textContent = error.message;
-            return;
           }
+          await loadVault();
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = error.message;
+          return;
         }
 
         editingLineIndex = index + 1;
@@ -390,15 +388,17 @@ function render() {
         const mutable = getEditableLinesForActiveFile();
         mutable.splice(index, 1);
 
-        if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
-          try {
+        try {
+          if (cryptoEnabled) {
+            await cryptLineAction("delete", index);
+          } else {
             await saveRealFile(activeFile, mutable);
-            await loadVault();
-          } catch (error) {
-            console.error(error);
-            statusText.textContent = error.message;
-            return;
           }
+          await loadVault();
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = error.message;
+          return;
         }
 
         editingLineIndex = null;
@@ -426,7 +426,8 @@ function render() {
     number.textContent = index + 1;
 
     const content = document.createElement("div");
-    content.className = "line-text" + (result.knownProfile ? "" : " gibberish");
+    const lineError = result.errors && result.errors[index];
+    content.className = "line-text" + (lineError ? " encryption-error" : "");
     content.textContent = text || " ";
 
     row.append(number, content);
@@ -441,11 +442,14 @@ function render() {
   });
 
   activeFilename.textContent = activeFile || "no file";
-  statusText.textContent = result.plainMode
-    ? "Plain text mode — encryption disabled"
-    : result.knownProfile
-      ? "Key profile: " + secondaryKeyInput.value
-      : "Unrecognized credential pair → deterministic mock gibberish";
+  if (result.plainMode) {
+    statusText.textContent = "Plain text mode — encryption disabled";
+  } else {
+    const errorCount = (result.errors || []).filter(Boolean).length;
+    statusText.textContent = errorCount
+      ? errorCount + " malformed encrypted line" + (errorCount === 1 ? "" : "s")
+      : "Encrypted view — " + result.lines.length + " line" + (result.lines.length === 1 ? "" : "s");
+  }
 }
 
 document.querySelectorAll(".file-item").forEach(button => {
@@ -458,16 +462,30 @@ document.querySelectorAll(".file-item").forEach(button => {
   });
 });
 
-masterPasswordInput.addEventListener("input", () => {
+function scheduleDecryptRefresh() {
   delete editedFiles[activeFile];
   editingLineIndex = null;
-  render();
-});
-secondaryKeyInput.addEventListener("input", () => {
-  delete editedFiles[activeFile];
-  editingLineIndex = null;
-  render();
-});
+  clearTimeout(credentialTimer);
+
+  credentialTimer = setTimeout(async () => {
+    if (!cryptoEnabled || !activeFile) {
+      render();
+      return;
+    }
+
+    try {
+      statusText.textContent = "Decrypting...";
+      await loadEncryptedFile(activeFile);
+      render();
+    } catch (error) {
+      console.error(error);
+      statusText.textContent = error.message;
+    }
+  }, 250);
+}
+
+masterPasswordInput.addEventListener("input", scheduleDecryptRefresh);
+secondaryKeyInput.addEventListener("input", scheduleDecryptRefresh);
 
 toggleMasterPassword.addEventListener("click", () => {
   const hidden = masterPasswordInput.type === "password";
@@ -489,10 +507,16 @@ function updateCryptoToggle() {
 cryptoToggle.addEventListener("click", async () => {
   cryptoEnabled = !cryptoEnabled;
   localStorage.setItem("endecrypt-demo:crypto-enabled", cryptoEnabled);
+  editingLineIndex = null;
+  delete editedFiles[activeFile];
 
-  if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
+  if (activeFile) {
     try {
-      await loadRealFile(activeFile);
+      if (cryptoEnabled) {
+        await loadEncryptedFile(activeFile);
+      } else {
+        await loadRealFile(activeFile);
+      }
     } catch (error) {
       console.error(error);
       statusText.textContent = error.message;
@@ -534,6 +558,8 @@ chooseFolderButton.addEventListener("click", async () => {
   editingLineIndex = null;
   Object.keys(editedFiles).forEach(key => delete editedFiles[key]);
   Object.keys(realFileLines).forEach(key => delete realFileLines[key]);
+  Object.keys(decryptedFileLines).forEach(key => delete decryptedFileLines[key]);
+  Object.keys(decryptErrors).forEach(key => delete decryptErrors[key]);
 
   await loadVault();
 });
