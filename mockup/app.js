@@ -290,3 +290,48 @@ document.querySelectorAll(".file-item").forEach(button => {
 
 loadPreferences();
 updateFileListColors();
+
+
+const clockDisplay = document.getElementById("clockDisplay");
+let clockMode = Number(localStorage.getItem("endecrypt-demo:clock-mode") || 0);
+
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function groupedYear(value) {
+  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+function updateClock() {
+  const now = new Date();
+
+  const yyyy = now.getFullYear();
+  const mm = pad2(now.getMonth() + 1);
+  const dd = pad2(now.getDate());
+  const hh = pad2(now.getHours());
+  const mi = pad2(now.getMinutes());
+  const ss = pad2(now.getSeconds());
+
+  if (clockMode === 0) {
+    clockDisplay.textContent = hh + ":" + mi;
+  } else if (clockMode === 1) {
+    clockDisplay.textContent = hh + ":" + mi + ":" + ss;
+  } else if (clockMode === 2) {
+    clockDisplay.textContent =
+      yyyy + "-" + mm + "-" + dd + " " + hh + ":" + mi + ":" + ss;
+  } else {
+    const bigBangYear = 13800010000 + yyyy;
+    clockDisplay.textContent =
+      groupedYear(bigBangYear) + " " + hh + ":" + mi + ":" + ss;
+  }
+}
+
+clockDisplay.addEventListener("click", () => {
+  clockMode = (clockMode + 1) % 4;
+  localStorage.setItem("endecrypt-demo:clock-mode", clockMode);
+  updateClock();
+});
+
+updateClock();
+setInterval(updateClock, 1000);
