@@ -11,7 +11,10 @@
     <header class="topbar">
       <div>
         <div class="eyebrow">LOCAL VAULT // LIVE DECRYPT</div>
-        <h1>EnDeCrypt</h1>
+        <div class="title-row">
+          <h1>EnDeCrypt</h1>
+          <div id="activeFilename" class="title-filename">secret.bla</div>
+        </div>
       </div>
       <div class="vault-info">
         <div class="vault-path">~/EnDeCrypt/vault</div>
@@ -66,16 +69,11 @@
           </div>
           <input id="transparencySlider" type="range" min="0" max="90" value="20">
 
-          <button id="backgroundButton" class="action-button compact">SWITCH BACKGROUND</button>
-
-          <div class="color-row">
-            <label>
-              <span>TEXT</span>
-              <input id="textColor" type="color" value="#d8eef5">
-            </label>
-            <label>
-              <span>FILE</span>
-              <input id="fileColor" type="color" value="#ff4fd8">
+          <div class="appearance-row">
+            <button id="backgroundButton" class="action-button compact">SWITCH BACKGROUND</button>
+            <label class="color-inline" title="Text and file color">
+              <span>COLOR</span>
+              <input id="contentColor" type="color" value="#55f3ff">
             </label>
           </div>
         </div>
@@ -85,18 +83,6 @@
       </aside>
 
       <section class="editor-panel">
-        <div class="editor-toolbar">
-          <div>
-            <div id="activeFilename" class="filename">secret.bla</div>
-            <div class="subtle">selected file decrypted with current password</div>
-          </div>
-          <div class="toolbar-actions">
-            <button>VIEW</button>
-            <button>EDIT</button>
-            <button>APPEND</button>
-          </div>
-        </div>
-
         <div id="editor" class="editor"></div>
 
         <footer class="statusbar">
