@@ -19,11 +19,11 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 15% 20%, rgba(85,243,255,.08), transparent 28%),
-    radial-gradient(circle at 85% 10%, rgba(255,79,216,.09), transparent 30%),
-    linear-gradient(135deg, #040507 0%, #090b12 55%, #080510 100%);
+    linear-gradient(rgba(2, 5, 10, .28), rgba(2, 5, 10, .42)),
+    url("assets/background-cyberpunk-room.png") center center / cover fixed no-repeat;
   color: var(--text);
   font-family: "JetBrains Mono", "Fira Code", monospace;
+  overflow: hidden;
 }
 
 body::before {
@@ -38,15 +38,17 @@ body::before {
 }
 
 .app-shell {
-  width: min(1180px, calc(100vw - 48px));
-  margin: 30px auto;
-  border: 1px solid rgba(85, 243, 255, 0.3);
-  background: rgba(4, 6, 11, 0.84);
+  width: calc(100vw - 48px);
+  height: calc(100vh - 48px);
+  margin: 24px auto;
+  border: 1px solid rgba(85, 243, 255, 0.34);
+  background: rgba(4, 6, 11, 0.70);
   box-shadow:
     0 0 0 1px rgba(255,79,216,.08),
     0 0 35px rgba(85,243,255,.08),
     0 0 70px rgba(255,79,216,.05);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(14px) saturate(115%);
+  overflow: hidden;
 }
 
 .topbar,
@@ -84,7 +86,7 @@ h1 {
 
 .password-panel {
   padding: 18px 24px;
-  background: rgba(11, 13, 20, 0.94);
+  background: rgba(11, 13, 20, 0.74);
 }
 
 .password-panel label {
@@ -129,13 +131,14 @@ h1 {
 .workspace {
   display: grid;
   grid-template-columns: 250px 1fr;
-  min-height: 620px;
+  height: calc(100% - 187px);
+  min-height: 0;
 }
 
 .sidebar {
   padding: 18px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(12,15,22,.98), rgba(7,9,15,.98));
+  background: linear-gradient(180deg, rgba(12,15,22,.78), rgba(7,9,15,.74));
   display: flex;
   flex-direction: column;
 }
@@ -216,7 +219,7 @@ h1 {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: rgba(5, 7, 12, .96);
+  background: rgba(5, 7, 12, .72);
 }
 
 .editor-toolbar {
@@ -247,8 +250,8 @@ h1 {
   padding: 22px 0;
   overflow: auto;
   background:
-    linear-gradient(180deg, rgba(85,243,255,.025), transparent 28%),
-    #05070b;
+    linear-gradient(180deg, rgba(85,243,255,.035), transparent 28%),
+    rgba(5, 7, 11, .76);
 }
 
 .line {
@@ -320,5 +323,25 @@ h1 {
     align-items: flex-start;
     gap: 14px;
     flex-direction: column;
+  }
+}
+
+@media (max-height: 760px) {
+  .app-shell {
+    height: calc(100vh - 24px);
+    margin: 12px auto;
+  }
+
+  .topbar {
+    min-height: 72px;
+    padding: 12px 20px;
+  }
+
+  .password-panel {
+    padding: 12px 20px;
+  }
+
+  .workspace {
+    height: calc(100% - 156px);
   }
 }
