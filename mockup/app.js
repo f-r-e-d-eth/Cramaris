@@ -3,6 +3,48 @@ let vaultImages = [];
 let vaultPath = "";
 let activeFile = null;
 
+let vaultPreferences = {
+  defaults: {
+    background: "dark",
+    glass: 20,
+    color: "#55f3ff"
+  },
+  files: {},
+  ui: {
+    crypto_enabled: true,
+    clock_mode: 0
+  }
+};
+
+async function loadVaultPreferences() {
+  const response = await fetch("/api/preferences");
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not load preferences");
+  }
+
+  vaultPreferences = data;
+}
+
+async function saveVaultPreferences() {
+  const response = await fetch("/api/preferences", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(vaultPreferences)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not save preferences");
+  }
+
+  vaultPreferences = data;
+}
+
 async function loadVault() {
   const response = await fetch("/api/vault");
   if (!response.ok) {
@@ -13,6 +55,13 @@ async function loadVault() {
   vaultFiles = data.files || [];
   vaultImages = data.images || [];
   vaultPath = data.path || "";
+
+  await loadVaultPreferences();
+
+  cryptoEnabled = vaultPreferences.ui?.crypto_enabled !== false;
+  clockMode = Number(vaultPreferences.ui?.clock_mode || 0) % 4;
+  updateCryptoToggle();
+  updateClock();
 
   const vaultPathElement = document.getElementById("vaultPath");
   if (vaultPathElement) {
@@ -211,7 +260,7 @@ const toggleSecondaryKey = document.getElementById("toggleSecondaryKey");
 const cryptoToggle = document.getElementById("cryptoToggle");
 const chooseFolderButton = document.getElementById("chooseFolderButton");
 
-let cryptoEnabled = localStorage.getItem("endecrypt-demo:crypto-enabled") !== "false";
+let cryptoEnabled = true;
 
 function getCombinedCredential() {
   return masterPasswordInput.value + "\0" + secondaryKeyInput.value;
@@ -506,7 +555,15 @@ function updateCryptoToggle() {
 
 cryptoToggle.addEventListener("click", async () => {
   cryptoEnabled = !cryptoEnabled;
-  localStorage.setItem("endecrypt-demo:crypto-enabled", cryptoEnabled);
+  vaultPreferences.ui.crypto_enabled = cryptoEnabled;
+
+  try {
+    await saveVaultPreferences();
+  } catch (error) {
+    console.error(error);
+    statusText.textContent = error.message;
+  }
+
   editingLineIndex = null;
   delete editedFiles[activeFile];
 
@@ -605,8 +662,20 @@ function refreshBackgroundOptions() {
   }
 }
 
-function preferenceKey(filename) {
-  return "endecrypt-demo:" + (filename || "__vault__");
+function getFilePreferences(filename) {
+  const defaults = vaultPreferences.defaults || {
+    background: "dark",
+    glass: 20,
+    color: "#55f3ff"
+  };
+
+  const saved = (vaultPreferences.files || {})[filename] || {};
+
+  return {
+    background: saved.background ?? defaults.background ?? "dark",
+    glass: saved.glass ?? defaults.glass ?? 20,
+    color: saved.color ?? defaults.color ?? "#55f3ff"
+  };
 }
 
 function getBackgroundById(id) {
@@ -618,37 +687,41 @@ function getCurrentBackgroundIndex() {
 }
 
 function loadPreferences() {
-  const saved = JSON.parse(localStorage.getItem(preferenceKey(activeFile)) || "{}");
+  const saved = getFilePreferences(activeFile);
 
-  if (saved.glass !== undefined) transparencySlider.value = saved.glass;
-  if (saved.contentColor) {
-    contentColor.value = saved.contentColor;
-  } else if (saved.textColor || saved.fileColor) {
-    contentColor.value = saved.fileColor || saved.textColor;
-  }
-  if (saved.background) selectedBackgroundId = saved.background;
+  transparencySlider.value = saved.glass;
+  contentColor.value = saved.color;
+  selectedBackgroundId = saved.background;
 
-  // Fallback if saved background no longer exists
   if (!getBackgroundById(selectedBackgroundId)) {
-    if (backgroundOptions.length > 0) {
-      selectedBackgroundId = backgroundOptions[0].id;
-    } else {
-      selectedBackgroundId = "dark";
-    }
+    selectedBackgroundId = backgroundOptions[0]?.id || "dark";
   }
 
   applyAppearance(false);
 }
 
-function savePreferences() {
-  localStorage.setItem(
-    preferenceKey(activeFile),
-    JSON.stringify({
-      glass: Number(transparencySlider.value),
-      contentColor: contentColor.value,
-      background: selectedBackgroundId
-    })
-  );
+async function savePreferences() {
+  if (!activeFile) {
+    return;
+  }
+
+  if (!vaultPreferences.files) {
+    vaultPreferences.files = {};
+  }
+
+  vaultPreferences.files[activeFile] = {
+    glass: Number(transparencySlider.value),
+    color: contentColor.value,
+    background: selectedBackgroundId
+  };
+
+  try {
+    await saveVaultPreferences();
+  } catch (error) {
+    console.error(error);
+    statusText.textContent = error.message;
+  }
+
   updateFileListColors();
 }
 
@@ -677,23 +750,17 @@ function applyAppearance(save = true) {
     backgroundButton.textContent = "BACKGROUND: " + selected.label;
   }
 
-  if (save) savePreferences();
+  if (save) void savePreferences();
 }
 
 function updateFileListColors() {
   document.querySelectorAll(".file-item").forEach(button => {
     const filename = button.dataset.file;
-
-    const saved = JSON.parse(
-      localStorage.getItem(preferenceKey(filename)) || "{}"
-    );
-
-    const color = saved.contentColor || saved.fileColor || saved.textColor || "#55f3ff";
-
+    const saved = getFilePreferences(filename);
     const nameElement = button.querySelector("span");
 
     if (nameElement) {
-      nameElement.style.color = color;
+      nameElement.style.color = saved.color;
     }
   });
 }
@@ -706,7 +773,9 @@ backgroundButton.addEventListener("click", () => {
 });
 
 contentColor.addEventListener("input", () => applyAppearance());
-transparencySlider.addEventListener("input", savePreferences);
+transparencySlider.addEventListener("input", () => {
+  void savePreferences();
+});
 
 document.querySelectorAll(".file-item").forEach(button => {
   button.addEventListener("click", () => {
@@ -715,7 +784,7 @@ document.querySelectorAll(".file-item").forEach(button => {
 });
 
 const clockDisplay = document.getElementById("clockDisplay");
-let clockMode = Number(localStorage.getItem("endecrypt-demo:clock-mode") || 0);
+let clockMode = 0;
 
 function pad2(value) {
   return String(value).padStart(2, "0");
@@ -749,9 +818,17 @@ function updateClock() {
   }
 }
 
-clockDisplay.addEventListener("click", () => {
+clockDisplay.addEventListener("click", async () => {
   clockMode = (clockMode + 1) % 4;
-  localStorage.setItem("endecrypt-demo:clock-mode", clockMode);
+  vaultPreferences.ui.clock_mode = clockMode;
+
+  try {
+    await saveVaultPreferences();
+  } catch (error) {
+    console.error(error);
+    statusText.textContent = error.message;
+  }
+
   updateClock();
 });
 
