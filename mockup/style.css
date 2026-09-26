@@ -562,3 +562,73 @@ h1 {
 .line-text {
   color: var(--content-user);
 }
+
+
+.line {
+  cursor: text;
+}
+
+.line.editing {
+  display: block;
+  margin: 6px 14px 10px 14px;
+  padding: 12px;
+  border: 1px solid rgba(85,243,255,.35);
+  background: rgba(6, 10, 16, .72);
+  box-shadow:
+    0 0 18px rgba(85,243,255,.08),
+    inset 0 0 18px rgba(255,79,216,.03);
+}
+
+.line-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+
+.line-editor-input {
+  width: 100%;
+  min-height: 38px;
+  resize: vertical;
+  padding: 9px 10px;
+  border: 1px solid rgba(85,243,255,.28);
+  outline: none;
+  background: rgba(2, 5, 9, .72);
+  color: var(--content-user);
+  font: inherit;
+  line-height: 1.4;
+}
+
+.line-editor-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px rgba(85,243,255,.10);
+}
+
+.line-editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+  flex-wrap: wrap;
+}
+
+.line-editor-actions button {
+  border: 1px solid rgba(85,243,255,.30);
+  background: rgba(85,243,255,.03);
+  color: var(--cyan);
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.line-editor-actions button:hover {
+  background: rgba(85,243,255,.10);
+}
+
+.line-editor-actions .delete-line {
+  color: #ff7ca8;
+  border-color: rgba(255,124,168,.35);
+}
