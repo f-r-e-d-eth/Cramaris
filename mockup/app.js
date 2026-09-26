@@ -317,6 +317,33 @@ function getVisibleLines() {
   };
 }
 
+async function appendBlankLineAtEnd() {
+  if (!activeFile) {
+    return;
+  }
+
+  const visible = getVisibleLines();
+  const newIndex = visible.lines.length;
+
+  try {
+    if (cryptoEnabled) {
+      await cryptLineAction("insert", newIndex, "");
+    } else {
+      const lines = [...(realFileLines[activeFile] || [])];
+      lines.push("");
+      await saveRealFile(activeFile, lines);
+    }
+
+    await loadVault();
+    editingLineIndex = newIndex;
+    render();
+  } catch (error) {
+    console.error(error);
+    statusText.textContent = error.message;
+  }
+}
+
+
 function render() {
   const result = getVisibleLines();
   const lines = editedFiles[activeFile] || result.lines;
@@ -502,6 +529,15 @@ function render() {
       : "Encrypted view — " + result.lines.length + " line" + (result.lines.length === 1 ? "" : "s");
   }
 }
+
+editor.addEventListener("dblclick", async event => {
+  if (event.target.closest(".line")) {
+    return;
+  }
+
+  await appendBlankLineAtEnd();
+});
+
 
 document.querySelectorAll(".file-item").forEach(button => {
   button.addEventListener("click", () => {
