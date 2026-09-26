@@ -49,6 +49,19 @@ def get_vault_dir():
     return DEFAULT_VAULT_DIR.resolve()
 
 
+def safe_vault_file(filename):
+    vault_dir = get_vault_dir()
+    path = (vault_dir / filename).resolve()
+
+    if path.parent != vault_dir:
+        raise ValueError("Invalid file path.")
+
+    if not path.is_file():
+        raise FileNotFoundError(filename)
+
+    return path
+
+
 def scan_vault(vault_dir):
     files = []
     images = []
@@ -73,14 +86,10 @@ def scan_vault(vault_dir):
             continue
 
         try:
-            line_count = sum(
-                1
-                for _ in path.open(
-                    "r",
-                    encoding="utf-8",
-                    errors="replace",
-                )
-            )
+            line_count = len(path.read_text(
+                encoding="utf-8",
+                errors="replace",
+            ).splitlines())
         except OSError:
             line_count = 0
 
@@ -90,6 +99,27 @@ def scan_vault(vault_dir):
         })
 
     return files, images
+
+
+def read_text_lines(path):
+    text = path.read_text(
+        encoding="utf-8",
+        errors="replace",
+    )
+
+    return text.splitlines()
+
+
+def write_text_lines(path, lines):
+    text = "\n".join(lines)
+
+    if lines:
+        text += "\n"
+
+    path.write_text(
+        text,
+        encoding="utf-8",
+    )
 
 
 @app.get("/")
@@ -125,6 +155,45 @@ def vault_info():
         "path": str(vault_dir),
         "files": files,
         "images": images,
+    })
+
+
+@app.get("/api/file/<path:filename>")
+def read_file(filename):
+    try:
+        path = safe_vault_file(filename)
+        lines = read_text_lines(path)
+    except (ValueError, FileNotFoundError):
+        return jsonify({"error": "File not found."}), 404
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify({
+        "name": path.name,
+        "lines": lines,
+    })
+
+
+@app.put("/api/file/<path:filename>")
+def write_file(filename):
+    data = request.get_json(silent=True) or {}
+    lines = data.get("lines")
+
+    if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
+        return jsonify({"error": "Expected a list of text lines."}), 400
+
+    try:
+        path = safe_vault_file(filename)
+        write_text_lines(path, lines)
+    except (ValueError, FileNotFoundError):
+        return jsonify({"error": "File not found."}), 404
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify({
+        "ok": True,
+        "name": path.name,
+        "lines": len(lines),
     })
 
 
