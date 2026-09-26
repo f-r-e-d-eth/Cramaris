@@ -1,11 +1,15 @@
+import json
 from pathlib import Path
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 
 
 BASE_DIR = Path(__file__).resolve().parent
 MOCKUP_DIR = BASE_DIR / "mockup"
-VAULT_DIR = BASE_DIR / "vault"
+DEFAULT_VAULT_DIR = BASE_DIR / "vault"
+
+CONFIG_DIR = Path.home() / ".config" / "endecrypt"
+CONFIG_FILE = CONFIG_DIR / "config.json"
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 IGNORED_NAMES = {".endecrypt.json"}
@@ -14,17 +18,42 @@ IGNORED_EXTENSIONS = {".py", ".pyc"}
 app = Flask(__name__)
 
 
-def ensure_vault():
-    VAULT_DIR.mkdir(parents=True, exist_ok=True)
+def load_config():
+    if not CONFIG_FILE.exists():
+        return {}
+
+    try:
+        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
-def scan_vault():
-    ensure_vault()
+def save_config(config):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_FILE.write_text(
+        json.dumps(config, indent=2),
+        encoding="utf-8",
+    )
 
+
+def get_vault_dir():
+    config = load_config()
+    configured = config.get("vault_path")
+
+    if configured:
+        path = Path(configured).expanduser()
+        if path.is_dir():
+            return path.resolve()
+
+    DEFAULT_VAULT_DIR.mkdir(parents=True, exist_ok=True)
+    return DEFAULT_VAULT_DIR.resolve()
+
+
+def scan_vault(vault_dir):
     files = []
     images = []
 
-    for path in sorted(VAULT_DIR.iterdir(), key=lambda item: item.name.lower()):
+    for path in sorted(vault_dir.iterdir(), key=lambda item: item.name.lower()):
         if not path.is_file():
             continue
 
@@ -44,7 +73,14 @@ def scan_vault():
             continue
 
         try:
-            line_count = sum(1 for _ in path.open("r", encoding="utf-8", errors="replace"))
+            line_count = sum(
+                1
+                for _ in path.open(
+                    "r",
+                    encoding="utf-8",
+                    errors="replace",
+                )
+            )
         except OSError:
             line_count = 0
 
@@ -58,16 +94,35 @@ def scan_vault():
 
 @app.get("/")
 def index():
-    ensure_vault()
+    get_vault_dir()
     return send_from_directory(MOCKUP_DIR, "index.html")
 
 
-@app.get("/api/vault")
+@app.route("/api/vault", methods=["GET", "POST"])
 def vault_info():
-    files, images = scan_vault()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        requested_path = str(data.get("path", "")).strip()
+
+        if not requested_path:
+            return jsonify({"error": "No folder path supplied."}), 400
+
+        path = Path(requested_path).expanduser()
+
+        if not path.is_dir():
+            return jsonify({"error": "Folder does not exist."}), 400
+
+        path = path.resolve()
+
+        config = load_config()
+        config["vault_path"] = str(path)
+        save_config(config)
+
+    vault_dir = get_vault_dir()
+    files, images = scan_vault(vault_dir)
 
     return jsonify({
-        "path": str(VAULT_DIR),
+        "path": str(vault_dir),
         "files": files,
         "images": images,
     })
@@ -75,7 +130,8 @@ def vault_info():
 
 @app.get("/vault-image/<path:filename>")
 def vault_image(filename):
-    return send_from_directory(VAULT_DIR, filename)
+    vault_dir = get_vault_dir()
+    return send_from_directory(vault_dir, filename)
 
 
 @app.get("/<path:filename>")
@@ -84,7 +140,7 @@ def mockup_file(filename):
 
 
 if __name__ == "__main__":
-    ensure_vault()
+    get_vault_dir()
 
     app.run(
         host="127.0.0.1",
