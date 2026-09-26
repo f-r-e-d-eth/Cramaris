@@ -46,10 +46,20 @@ const demoFiles = {
 let activeFile = "secret.bla";
 
 const editor = document.getElementById("editor");
-const passwordInput = document.getElementById("password");
+const masterPasswordInput = document.getElementById("masterPassword");
+const secondaryKeyInput = document.getElementById("secondaryKey");
 const activeFilename = document.getElementById("activeFilename");
 const statusText = document.getElementById("statusText");
-const togglePassword = document.getElementById("togglePassword");
+const toggleMasterPassword = document.getElementById("toggleMasterPassword");
+const toggleSecondaryKey = document.getElementById("toggleSecondaryKey");
+
+function getCombinedCredential() {
+  return masterPasswordInput.value + "\0" + secondaryKeyInput.value;
+}
+
+function getProfileKey() {
+  return secondaryKeyInput.value;
+}
 
 function pseudoGibberish(text, password) {
   const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/!.,:;()[]{}_?=@#$%&";
@@ -70,12 +80,13 @@ function pseudoGibberish(text, password) {
 }
 
 function getVisibleLines() {
-  const password = passwordInput.value;
+  const profileKey = getProfileKey();
+  const combinedCredential = getCombinedCredential();
   const file = demoFiles[activeFile];
 
-  if (file[password]) {
+  if (masterPasswordInput.value === "master" && file[profileKey]) {
     return {
-      lines: file[password],
+      lines: file[profileKey],
       knownProfile: true
     };
   }
@@ -83,7 +94,7 @@ function getVisibleLines() {
   const source = file.apple || Object.values(file)[0];
 
   return {
-    lines: source.map(line => pseudoGibberish(line, password)),
+    lines: source.map(line => pseudoGibberish(line, combinedCredential)),
     knownProfile: false
   };
 }
@@ -111,8 +122,8 @@ function render() {
 
   activeFilename.textContent = activeFile;
   statusText.textContent = result.knownProfile
-    ? "Password profile: " + passwordInput.value
-    : "Unrecognized password → deterministic mock gibberish";
+    ? "Key profile: " + secondaryKeyInput.value
+    : "Unrecognized credential pair → deterministic mock gibberish";
 }
 
 document.querySelectorAll(".file-item").forEach(button => {
@@ -124,12 +135,19 @@ document.querySelectorAll(".file-item").forEach(button => {
   });
 });
 
-passwordInput.addEventListener("input", render);
+masterPasswordInput.addEventListener("input", render);
+secondaryKeyInput.addEventListener("input", render);
 
-togglePassword.addEventListener("click", () => {
-  const hidden = passwordInput.type === "password";
-  passwordInput.type = hidden ? "text" : "password";
-  togglePassword.textContent = hidden ? "HIDE" : "SHOW";
+toggleMasterPassword.addEventListener("click", () => {
+  const hidden = masterPasswordInput.type === "password";
+  masterPasswordInput.type = hidden ? "text" : "password";
+  toggleMasterPassword.textContent = hidden ? "HIDE" : "SHOW";
+});
+
+toggleSecondaryKey.addEventListener("click", () => {
+  const hidden = secondaryKeyInput.type === "password";
+  secondaryKeyInput.type = hidden ? "text" : "password";
+  toggleSecondaryKey.textContent = hidden ? "HIDE" : "SHOW";
 });
 
 render();
