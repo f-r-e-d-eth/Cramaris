@@ -454,3 +454,29 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+
+.vault-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.clock-display {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--cyan);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: .08em;
+  cursor: pointer;
+  text-align: right;
+  text-shadow: 0 0 10px rgba(85,243,255,.22);
+}
+
+.clock-display:hover {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(85,243,255,.65);
+}
