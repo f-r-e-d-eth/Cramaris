@@ -436,3 +436,21 @@ h1 {
   background: transparent;
   cursor: pointer;
 }
+
+
+.password-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.55fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.password-field {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .password-grid {
+    grid-template-columns: 1fr;
+  }
+}
