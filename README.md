@@ -61,3 +61,28 @@ The next milestone is a local browser interface with:
 - cyberpunk-inspired styling.
 
 The files stay local; the browser UI will communicate with a small local Python backend.
+
+
+## Running the Flask UI
+
+The first real-app milestone serves the existing GUI mockup through a local Flask server.
+
+Install dependencies:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+Start the app:
+
+```bash
+python3 app.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
+
+At this stage the interface is still mock data only. Real vault access and encryption will be added in later milestones.
