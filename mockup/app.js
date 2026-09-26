@@ -1,3 +1,75 @@
+let vaultFiles = [];
+let vaultImages = [];
+let vaultPath = "";
+let activeFile = null;
+
+async function loadVault() {
+  const response = await fetch("/api/vault");
+  if (!response.ok) {
+    throw new Error("Could not load vault");
+  }
+
+  const data = await response.json();
+  vaultFiles = data.files || [];
+  vaultImages = data.images || [];
+  vaultPath = data.path || "";
+
+  const vaultPathElement = document.getElementById("vaultPath");
+  if (vaultPathElement) {
+    vaultPathElement.textContent = vaultPath;
+  }
+
+  renderFileList();
+
+  if (!activeFile || !vaultFiles.some(file => file.name === activeFile)) {
+    activeFile = vaultFiles.length ? vaultFiles[0].name : null;
+  }
+
+  refreshBackgroundOptions();
+  loadPreferences();
+  render();
+}
+
+function renderFileList() {
+  const fileList = document.getElementById("fileList");
+  fileList.innerHTML = "";
+
+  if (!vaultFiles.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-vault";
+    empty.textContent = "Vault is empty";
+    fileList.appendChild(empty);
+    return;
+  }
+
+  vaultFiles.forEach(file => {
+    const button = document.createElement("button");
+    button.className = "file-item" + (file.name === activeFile ? " active" : "");
+    button.dataset.file = file.name;
+
+    const name = document.createElement("span");
+    name.textContent = file.name;
+
+    const info = document.createElement("small");
+    info.textContent = file.lines + (file.lines === 1 ? " line" : " lines");
+
+    button.append(name, info);
+
+    button.addEventListener("click", () => {
+      activeFile = file.name;
+      editingLineIndex = null;
+      renderFileList();
+      loadPreferences();
+      render();
+      updateFileListColors();
+    });
+
+    fileList.appendChild(button);
+  });
+
+  updateFileListColors();
+}
+
 const demoFiles = {
   "secret.bla": {
     apple: [
@@ -43,7 +115,6 @@ const demoFiles = {
   }
 };
 
-let activeFile = "secret.bla";
 const editedFiles = {};
 let editingLineIndex = null;
 
@@ -93,9 +164,40 @@ function pseudoGibberish(text, password) {
 }
 
 function getVisibleLines() {
+  if (!activeFile) {
+    return {
+      lines: ["No editable files found in the vault.", "Add a text/encrypted file to the vault folder and refresh."],
+      knownProfile: true,
+      plainMode: true
+    };
+  }
+
   const profileKey = getProfileKey();
   const combinedCredential = getCombinedCredential();
   const file = demoFiles[activeFile];
+
+  if (!file) {
+    const source = [
+      "Real vault file detected: " + activeFile,
+      "File contents will be connected in Step 3.",
+      "For now Step 2 only proves real folder scanning and selection."
+    ];
+
+    if (!cryptoEnabled) {
+      return {
+        lines: source,
+        knownProfile: true,
+        plainMode: true
+      };
+    }
+
+    return {
+      lines: source.map(line => pseudoGibberish(line, combinedCredential)),
+      knownProfile: false,
+      plainMode: false
+    };
+  }
+
   const source = file.apple || Object.values(file)[0];
 
   if (!cryptoEnabled) {
@@ -252,7 +354,7 @@ function render() {
     editor.appendChild(row);
   });
 
-  activeFilename.textContent = activeFile;
+  activeFilename.textContent = activeFile || "no file";
   statusText.textContent = result.plainMode
     ? "Plain text mode — encryption disabled"
     : result.knownProfile
@@ -306,7 +408,6 @@ cryptoToggle.addEventListener("click", () => {
 });
 
 updateCryptoToggle();
-render();
 
 
 const transparencySlider = document.getElementById("transparencySlider");
@@ -327,17 +428,28 @@ updateTransparency();
 const backgroundButton = document.getElementById("backgroundButton");
 const contentColor = document.getElementById("contentColor");
 
-const backgroundOptions = [
-  { id: "dark", label: "DARK", url: null },
-  { id: "background-cyberpunk-room.png", label: "BG 1", url: "assets/background-cyberpunk-room.png" },
-  { id: "background-cyberpunk-room_2.png", label: "BG 2", url: "assets/background-cyberpunk-room_2.png" },
-  { id: "background-cyberpunk-room_3.png", label: "BG 3", url: "assets/background-cyberpunk-room_3.png" }
-];
+let backgroundOptions = [];
+let selectedBackgroundId = "dark";
 
-let selectedBackgroundId = "background-cyberpunk-room.png";
+function refreshBackgroundOptions() {
+  backgroundOptions = [
+    { id: "dark", label: "DARK", url: null },
+    ...vaultImages.map((image, index) => ({
+      id: image.name,
+      label: "BG " + (index + 1),
+      url: image.url
+    }))
+  ];
+
+  if (!getBackgroundById(selectedBackgroundId)) {
+    selectedBackgroundId = backgroundOptions.length > 1
+      ? backgroundOptions[1].id
+      : "dark";
+  }
+}
 
 function preferenceKey(filename) {
-  return "endecrypt-demo:" + filename;
+  return "endecrypt-demo:" + (filename || "__vault__");
 }
 
 function getBackgroundById(id) {
@@ -445,10 +557,6 @@ document.querySelectorAll(".file-item").forEach(button => {
   });
 });
 
-loadPreferences();
-updateFileListColors();
-
-
 const clockDisplay = document.getElementById("clockDisplay");
 let clockMode = Number(localStorage.getItem("endecrypt-demo:clock-mode") || 0);
 
@@ -492,3 +600,10 @@ clockDisplay.addEventListener("click", () => {
 
 updateClock();
 setInterval(updateClock, 1000);
+
+
+loadVault().catch(error => {
+  console.error(error);
+  statusText.textContent = "Could not load vault";
+  activeFilename.textContent = "error";
+});
