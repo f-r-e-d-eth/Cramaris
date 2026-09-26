@@ -52,6 +52,9 @@ const activeFilename = document.getElementById("activeFilename");
 const statusText = document.getElementById("statusText");
 const toggleMasterPassword = document.getElementById("toggleMasterPassword");
 const toggleSecondaryKey = document.getElementById("toggleSecondaryKey");
+const cryptoToggle = document.getElementById("cryptoToggle");
+
+let cryptoEnabled = localStorage.getItem("endecrypt-demo:crypto-enabled") !== "false";
 
 function getCombinedCredential() {
   return masterPasswordInput.value + "\0" + secondaryKeyInput.value;
@@ -83,19 +86,28 @@ function getVisibleLines() {
   const profileKey = getProfileKey();
   const combinedCredential = getCombinedCredential();
   const file = demoFiles[activeFile];
+  const source = file.apple || Object.values(file)[0];
+
+  if (!cryptoEnabled) {
+    return {
+      lines: source,
+      knownProfile: true,
+      plainMode: true
+    };
+  }
 
   if (masterPasswordInput.value === "master" && file[profileKey]) {
     return {
       lines: file[profileKey],
-      knownProfile: true
+      knownProfile: true,
+      plainMode: false
     };
   }
 
-  const source = file.apple || Object.values(file)[0];
-
   return {
     lines: source.map(line => pseudoGibberish(line, combinedCredential)),
-    knownProfile: false
+    knownProfile: false,
+    plainMode: false
   };
 }
 
@@ -121,9 +133,11 @@ function render() {
   });
 
   activeFilename.textContent = activeFile;
-  statusText.textContent = result.knownProfile
-    ? "Key profile: " + secondaryKeyInput.value
-    : "Unrecognized credential pair → deterministic mock gibberish";
+  statusText.textContent = result.plainMode
+    ? "Plain text mode — encryption disabled"
+    : result.knownProfile
+      ? "Key profile: " + secondaryKeyInput.value
+      : "Unrecognized credential pair → deterministic mock gibberish";
 }
 
 document.querySelectorAll(".file-item").forEach(button => {
@@ -150,6 +164,19 @@ toggleSecondaryKey.addEventListener("click", () => {
   toggleSecondaryKey.textContent = hidden ? "HIDE" : "SHOW";
 });
 
+function updateCryptoToggle() {
+  cryptoToggle.textContent = cryptoEnabled ? "CRYPT ON" : "CRYPT OFF";
+  cryptoToggle.classList.toggle("active", cryptoEnabled);
+}
+
+cryptoToggle.addEventListener("click", () => {
+  cryptoEnabled = !cryptoEnabled;
+  localStorage.setItem("endecrypt-demo:crypto-enabled", cryptoEnabled);
+  updateCryptoToggle();
+  render();
+});
+
+updateCryptoToggle();
 render();
 
 
@@ -323,7 +350,7 @@ function updateClock() {
   } else {
     const bigBangYear = 13800010000 + yyyy;
     clockDisplay.textContent =
-      groupedYear(bigBangYear) + " " + hh + ":" + mi + ":" + ss;
+      groupedYear(bigBangYear) + "-" + mm + "-" + dd + " " + hh + ":" + mi + ":" + ss;
   }
 }
 
