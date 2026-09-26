@@ -44,6 +44,16 @@ const demoFiles = {
 };
 
 let activeFile = "secret.bla";
+const editedFiles = {};
+let editingLineIndex = null;
+
+function getEditableLinesForActiveFile() {
+  if (!editedFiles[activeFile]) {
+    const visible = getVisibleLines();
+    editedFiles[activeFile] = [...visible.lines];
+  }
+  return editedFiles[activeFile];
+}
 
 const editor = document.getElementById("editor");
 const masterPasswordInput = document.getElementById("masterPassword");
@@ -113,12 +123,89 @@ function getVisibleLines() {
 
 function render() {
   const result = getVisibleLines();
+  const lines = editedFiles[activeFile] || result.lines;
 
   editor.innerHTML = "";
 
-  result.lines.forEach((text, index) => {
+  lines.forEach((text, index) => {
     const row = document.createElement("div");
     row.className = "line";
+
+    if (editingLineIndex === index) {
+      row.classList.add("editing");
+
+      const header = document.createElement("div");
+      header.className = "line-editor-header";
+      header.innerHTML = "<span>EDIT LINE " + (index + 1) + "</span><span>ENTER = SAVE · ESC = CANCEL</span>";
+
+      const input = document.createElement("textarea");
+      input.className = "line-editor-input";
+      input.value = text;
+
+      const actions = document.createElement("div");
+      actions.className = "line-editor-actions";
+
+      const addButton = document.createElement("button");
+      addButton.textContent = "+ NEW LINE";
+      addButton.type = "button";
+
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "DELETE";
+      deleteButton.type = "button";
+      deleteButton.className = "delete-line";
+
+      const cancelButton = document.createElement("button");
+      cancelButton.textContent = "CANCEL";
+      cancelButton.type = "button";
+
+      function saveAndClose() {
+        const mutable = getEditableLinesForActiveFile();
+        mutable[index] = input.value;
+        editingLineIndex = null;
+        render();
+      }
+
+      input.addEventListener("keydown", event => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          saveAndClose();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          editingLineIndex = null;
+          render();
+        }
+      });
+
+      addButton.addEventListener("click", () => {
+        const mutable = getEditableLinesForActiveFile();
+        mutable[index] = input.value;
+        mutable.splice(index + 1, 0, "");
+        editingLineIndex = index + 1;
+        render();
+      });
+
+      deleteButton.addEventListener("click", () => {
+        const mutable = getEditableLinesForActiveFile();
+        mutable.splice(index, 1);
+        editingLineIndex = null;
+        render();
+      });
+
+      cancelButton.addEventListener("click", () => {
+        editingLineIndex = null;
+        render();
+      });
+
+      row.append(header, input, actions);
+      editor.appendChild(row);
+
+      setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }, 0);
+
+      return;
+    }
 
     const number = document.createElement("div");
     number.className = "line-number";
@@ -129,6 +216,13 @@ function render() {
     content.textContent = text || " ";
 
     row.append(number, content);
+
+    row.addEventListener("dblclick", () => {
+      editingLineIndex = index;
+      getEditableLinesForActiveFile();
+      render();
+    });
+
     editor.appendChild(row);
   });
 
@@ -145,12 +239,21 @@ document.querySelectorAll(".file-item").forEach(button => {
     document.querySelectorAll(".file-item").forEach(item => item.classList.remove("active"));
     button.classList.add("active");
     activeFile = button.dataset.file;
+    editingLineIndex = null;
     render();
   });
 });
 
-masterPasswordInput.addEventListener("input", render);
-secondaryKeyInput.addEventListener("input", render);
+masterPasswordInput.addEventListener("input", () => {
+  delete editedFiles[activeFile];
+  editingLineIndex = null;
+  render();
+});
+secondaryKeyInput.addEventListener("input", () => {
+  delete editedFiles[activeFile];
+  editingLineIndex = null;
+  render();
+});
 
 toggleMasterPassword.addEventListener("click", () => {
   const hidden = masterPasswordInput.type === "password";
