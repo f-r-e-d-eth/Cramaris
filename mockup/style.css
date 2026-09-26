@@ -699,3 +699,93 @@ h1 {
   opacity: 0.95;
   font-style: italic;
 }
+
+
+/* Bottom status / appearance controls */
+.statusbar {
+  align-items: center;
+  gap: 16px;
+  padding: 7px 12px;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.status-appearance {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-glass {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.status-glass #transparencySlider {
+  width: 120px;
+  margin: 0;
+}
+
+.status-glass #transparencyValue {
+  min-width: 30px;
+  color: var(--cyan);
+  text-align: right;
+}
+
+.status-button {
+  border: 1px solid rgba(85,243,255,.35);
+  color: var(--cyan);
+  background: rgba(85,243,255,.03);
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.status-button:hover {
+  background: rgba(85,243,255,.09);
+  box-shadow: 0 0 14px rgba(85,243,255,.08);
+}
+
+.status-color {
+  height: 28px;
+  padding: 4px 7px;
+  border: 1px solid rgba(85,243,255,.35);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cyan);
+  background: rgba(85,243,255,.03);
+  white-space: nowrap;
+}
+
+.status-color input[type="color"] {
+  width: 26px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+@media (max-width: 1050px) {
+  .statusbar {
+    flex-wrap: wrap;
+  }
+
+  .status-appearance {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
