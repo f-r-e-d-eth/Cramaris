@@ -692,3 +692,10 @@ h1 {
   border: 1px dashed rgba(85,243,255,.18);
   text-align: center;
 }
+
+
+.line-text.encryption-error {
+  color: var(--danger);
+  opacity: 0.95;
+  font-style: italic;
+}
