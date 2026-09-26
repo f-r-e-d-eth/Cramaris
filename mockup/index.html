@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnDeCrypt UI Mockup</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">LOCAL VAULT // LIVE DECRYPT</div>
+        <h1>EnDeCrypt</h1>
+      </div>
+      <div class="vault-path">~/EnDeCrypt/vault</div>
+    </header>
+
+    <section class="password-panel">
+      <label for="password">Password</label>
+      <div class="password-row">
+        <input id="password" type="password" value="apple" autocomplete="off">
+        <button id="togglePassword" class="ghost-button" type="button">SHOW</button>
+      </div>
+      <div class="hint">Changing the password updates the visible interpretation immediately.</div>
+    </section>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <div class="section-heading">FILES</div>
+        <button class="file-item active" data-file="secret.bla">
+          <span>secret.bla</span>
+          <small>3 lines</small>
+        </button>
+        <button class="file-item" data-file="ideas.dat">
+          <span>ideas.dat</span>
+          <small>4 lines</small>
+        </button>
+        <button class="file-item" data-file="journal.enc">
+          <span>journal.enc</span>
+          <small>5 lines</small>
+        </button>
+
+        <div class="sidebar-spacer"></div>
+
+        <button class="action-button">+ NEW FILE</button>
+        <button class="action-button secondary">CHOOSE FOLDER</button>
+      </aside>
+
+      <section class="editor-panel">
+        <div class="editor-toolbar">
+          <div>
+            <div id="activeFilename" class="filename">secret.bla</div>
+            <div class="subtle">selected file decrypted with current password</div>
+          </div>
+          <div class="toolbar-actions">
+            <button>VIEW</button>
+            <button>EDIT</button>
+            <button>APPEND</button>
+          </div>
+        </div>
+
+        <div id="editor" class="editor"></div>
+
+        <footer class="statusbar">
+          <span><span class="status-dot"></span> READY</span>
+          <span id="statusText">Password profile: apple</span>
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
