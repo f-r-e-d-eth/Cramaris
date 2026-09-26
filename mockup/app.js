@@ -196,8 +196,7 @@ updateTransparency();
 
 
 const backgroundButton = document.getElementById("backgroundButton");
-const textColor = document.getElementById("textColor");
-const fileColor = document.getElementById("fileColor");
+const contentColor = document.getElementById("contentColor");
 
 const backgroundOptions = [
   { id: "dark", label: "DARK", url: null },
@@ -224,8 +223,11 @@ function loadPreferences() {
   const saved = JSON.parse(localStorage.getItem(preferenceKey(activeFile)) || "{}");
 
   if (saved.glass !== undefined) transparencySlider.value = saved.glass;
-  if (saved.textColor) textColor.value = saved.textColor;
-  if (saved.fileColor) fileColor.value = saved.fileColor;
+  if (saved.contentColor) {
+    contentColor.value = saved.contentColor;
+  } else if (saved.textColor || saved.fileColor) {
+    contentColor.value = saved.fileColor || saved.textColor;
+  }
   if (saved.background) selectedBackgroundId = saved.background;
 
   // Fallback if saved background no longer exists
@@ -245,8 +247,7 @@ function savePreferences() {
     preferenceKey(activeFile),
     JSON.stringify({
       glass: Number(transparencySlider.value),
-      textColor: textColor.value,
-      fileColor: fileColor.value,
+      contentColor: contentColor.value,
       background: selectedBackgroundId
     })
   );
@@ -256,8 +257,9 @@ function savePreferences() {
 function applyAppearance(save = true) {
   updateTransparency();
 
-  document.documentElement.style.setProperty("--text-user", textColor.value);
-  document.documentElement.style.setProperty("--file-user", fileColor.value);
+  document.documentElement.style.setProperty("--content-user", contentColor.value);
+  document.documentElement.style.setProperty("--text-user", contentColor.value);
+  document.documentElement.style.setProperty("--file-user", contentColor.value);
 
   let selected = getBackgroundById(selectedBackgroundId);
 
@@ -288,7 +290,7 @@ function updateFileListColors() {
       localStorage.getItem(preferenceKey(filename)) || "{}"
     );
 
-    const color = saved.fileColor || "#ff4fd8";
+    const color = saved.contentColor || saved.fileColor || saved.textColor || "#55f3ff";
 
     const nameElement = button.querySelector("span");
 
@@ -305,8 +307,7 @@ backgroundButton.addEventListener("click", () => {
   applyAppearance();
 });
 
-textColor.addEventListener("input", () => applyAppearance());
-fileColor.addEventListener("input", () => applyAppearance());
+contentColor.addEventListener("input", () => applyAppearance());
 transparencySlider.addEventListener("input", savePreferences);
 
 document.querySelectorAll(".file-item").forEach(button => {
