@@ -152,6 +152,7 @@ const decryptErrors = {};
 let editingLineIndex = null;
 let decryptRequestSerial = 0;
 let credentialTimer = null;
+let preferenceSaveTimer = null;
 
 async function loadEncryptedFile(filename) {
   const serial = ++decryptRequestSerial;
@@ -700,7 +701,7 @@ function loadPreferences() {
   applyAppearance(false);
 }
 
-async function savePreferences() {
+function savePreferences() {
   if (!activeFile) {
     return;
   }
@@ -715,14 +716,17 @@ async function savePreferences() {
     background: selectedBackgroundId
   };
 
-  try {
-    await saveVaultPreferences();
-  } catch (error) {
-    console.error(error);
-    statusText.textContent = error.message;
-  }
-
   updateFileListColors();
+
+  clearTimeout(preferenceSaveTimer);
+  preferenceSaveTimer = setTimeout(async () => {
+    try {
+      await saveVaultPreferences();
+    } catch (error) {
+      console.error(error);
+      statusText.textContent = error.message;
+    }
+  }, 200);
 }
 
 function applyAppearance(save = true) {
@@ -750,7 +754,7 @@ function applyAppearance(save = true) {
     backgroundButton.textContent = "BACKGROUND: " + selected.label;
   }
 
-  if (save) void savePreferences();
+  if (save) savePreferences();
 }
 
 function updateFileListColors() {
@@ -773,9 +777,7 @@ backgroundButton.addEventListener("click", () => {
 });
 
 contentColor.addEventListener("input", () => applyAppearance());
-transparencySlider.addEventListener("input", () => {
-  void savePreferences();
-});
+transparencySlider.addEventListener("input", savePreferences);
 
 document.querySelectorAll(".file-item").forEach(button => {
   button.addEventListener("click", () => {
