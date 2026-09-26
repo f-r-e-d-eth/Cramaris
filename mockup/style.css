@@ -1,8 +1,9 @@
 :root {
   --bg: #06070a;
   --glass-alpha: 0.55;
-  --text-user: #d8eef5;
-  --file-user: #ff4fd8;
+  --content-user: #55f3ff;
+  --text-user: #55f3ff;
+  --file-user: #55f3ff;
   --panel: rgba(12, 15, 22, 0.92);
   --panel-2: rgba(18, 21, 31, 0.9);
   --cyan: #55f3ff;
@@ -134,7 +135,7 @@ h1 {
 .workspace {
   display: grid;
   grid-template-columns: 250px 1fr;
-  height: calc(100% - 187px);
+  height: calc(100% - 131px);
   min-height: 0;
 }
 
@@ -345,7 +346,7 @@ h1 {
   }
 
   .workspace {
-    height: calc(100% - 156px);
+    height: calc(100% - 121px);
   }
 }
 
@@ -489,7 +490,70 @@ h1 {
 }
 
 .crypto-toggle.active {
-  color: #5dffa0;
-  border-color: rgba(93,255,160,.45);
-  box-shadow: 0 0 12px rgba(93,255,160,.08);
+  color: var(--cyan);
+  border-color: rgba(85,243,255,.45);
+  box-shadow: 0 0 12px rgba(85,243,255,.10);
+}
+
+
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.title-filename {
+  color: var(--content-user);
+  font-size: 15px;
+  letter-spacing: .04em;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.sidebar {
+  padding-bottom: 12px;
+}
+
+.appearance-control {
+  margin-bottom: 8px;
+}
+
+.appearance-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.appearance-row .action-button.compact {
+  margin-top: 0;
+}
+
+.color-inline {
+  min-width: 74px;
+  height: 34px;
+  padding: 6px 8px;
+  border: 1px solid rgba(85,243,255,.35);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: .08em;
+  background: rgba(85,243,255,.03);
+}
+
+.color-inline input[type="color"] {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.file-item span,
+.line-text {
+  color: var(--content-user);
 }
