@@ -17,12 +17,24 @@
     </header>
 
     <section class="password-panel">
-      <label for="password">Password</label>
-      <div class="password-row">
-        <input id="password" type="password" value="apple" autocomplete="off">
-        <button id="togglePassword" class="ghost-button" type="button">SHOW</button>
+      <div class="password-grid">
+        <div class="password-field">
+          <label for="masterPassword">Master Password</label>
+          <div class="password-row">
+            <input id="masterPassword" type="password" value="master" autocomplete="off">
+            <button id="toggleMasterPassword" class="ghost-button" type="button">SHOW</button>
+          </div>
+        </div>
+
+        <div class="password-field key-field">
+          <label for="secondaryKey">Key</label>
+          <div class="password-row">
+            <input id="secondaryKey" type="password" value="apple" autocomplete="off">
+            <button id="toggleSecondaryKey" class="ghost-button" type="button">SHOW</button>
+          </div>
+        </div>
       </div>
-      <div class="hint">Changing the password updates the visible interpretation immediately.</div>
+      <div class="hint">Changing either field updates the visible interpretation immediately.</div>
     </section>
 
     <main class="workspace">
