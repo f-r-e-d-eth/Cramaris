@@ -19,12 +19,11 @@ async function loadVault() {
     vaultPathElement.textContent = vaultPath;
   }
 
-  renderFileList();
-
   if (!activeFile || !vaultFiles.some(file => file.name === activeFile)) {
     activeFile = vaultFiles.length ? vaultFiles[0].name : null;
   }
 
+  renderFileList();
   refreshBackgroundOptions();
   loadPreferences();
   render();
@@ -134,6 +133,7 @@ const statusText = document.getElementById("statusText");
 const toggleMasterPassword = document.getElementById("toggleMasterPassword");
 const toggleSecondaryKey = document.getElementById("toggleSecondaryKey");
 const cryptoToggle = document.getElementById("cryptoToggle");
+const chooseFolderButton = document.getElementById("chooseFolderButton");
 
 let cryptoEnabled = localStorage.getItem("endecrypt-demo:crypto-enabled") !== "false";
 
@@ -404,6 +404,40 @@ cryptoToggle.addEventListener("click", () => {
   cryptoEnabled = !cryptoEnabled;
   localStorage.setItem("endecrypt-demo:crypto-enabled", cryptoEnabled);
   updateCryptoToggle();
+
+chooseFolderButton.addEventListener("click", async () => {
+  const requestedPath = window.prompt(
+    "Vault folder path:",
+    vaultPath || ""
+  );
+
+  if (!requestedPath) {
+    return;
+  }
+
+  const response = await fetch("/api/vault", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      path: requestedPath
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    window.alert(data.error || "Could not change vault folder.");
+    return;
+  }
+
+  activeFile = null;
+  editingLineIndex = null;
+  Object.keys(editedFiles).forEach(key => delete editedFiles[key]);
+
+  await loadVault();
+});
   render();
 });
 
