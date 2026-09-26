@@ -133,3 +133,18 @@ togglePassword.addEventListener("click", () => {
 });
 
 render();
+
+
+const transparencySlider = document.getElementById("transparencySlider");
+const transparencyValue = document.getElementById("transparencyValue");
+
+function updateTransparency() {
+  const percent = Number(transparencySlider.value);
+  const alpha = percent / 100;
+
+  document.documentElement.style.setProperty("--glass-alpha", alpha.toFixed(2));
+  transparencyValue.textContent = percent + "%";
+}
+
+transparencySlider.addEventListener("input", updateTransparency);
+updateTransparency();
