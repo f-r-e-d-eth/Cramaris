@@ -366,6 +366,46 @@ def vault_info():
     })
 
 
+@app.post("/api/file")
+def create_file():
+    data = request.get_json(silent=True) or {}
+    filename = str(data.get("name", "")).strip()
+
+    if not filename:
+        return jsonify({"error": "Please enter a file name."}), 400
+
+    if filename in {".", ".."} or "/" in filename or "\\" in filename:
+        return jsonify({"error": "File name must not contain path separators."}), 400
+
+    if filename.startswith("."):
+        return jsonify({"error": "Hidden file names are reserved."}), 400
+
+    if filename in IGNORED_NAMES:
+        return jsonify({"error": "That file name is reserved by EnDeCrypt."}), 400
+
+    if Path(filename).suffix.lower() in IMAGE_EXTENSIONS:
+        return jsonify({"error": "Image extensions are reserved for backgrounds."}), 400
+
+    if Path(filename).suffix.lower() in IGNORED_EXTENSIONS:
+        return jsonify({"error": "That file extension is ignored by EnDeCrypt."}), 400
+
+    vault_dir = get_vault_dir()
+    path = vault_dir / filename
+
+    if path.exists():
+        return jsonify({"error": "A file with that name already exists."}), 409
+
+    try:
+        path.touch(exist_ok=False)
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify({
+        "ok": True,
+        "name": filename,
+    }), 201
+
+
 @app.get("/api/file/<path:filename>")
 def read_file(filename):
     try:
