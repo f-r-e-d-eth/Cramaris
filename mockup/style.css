@@ -42,7 +42,7 @@ body::before {
   height: calc(100vh - 48px);
   margin: 24px auto;
   border: 1px solid rgba(85, 243, 255, 0.34);
-  background: rgba(4, 6, 11, 0.70);
+  background: rgba(4, 6, 11, 0.46);
   box-shadow:
     0 0 0 1px rgba(255,79,216,.08),
     0 0 35px rgba(85,243,255,.08),
@@ -86,7 +86,7 @@ h1 {
 
 .password-panel {
   padding: 18px 24px;
-  background: rgba(11, 13, 20, 0.74);
+  background: rgba(11, 13, 20, 0.52);
 }
 
 .password-panel label {
@@ -138,7 +138,7 @@ h1 {
 .sidebar {
   padding: 18px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(12,15,22,.78), rgba(7,9,15,.74));
+  background: linear-gradient(180deg, rgba(12,15,22,.52), rgba(7,9,15,.46));
   display: flex;
   flex-direction: column;
 }
@@ -219,7 +219,7 @@ h1 {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: rgba(5, 7, 12, .72);
+  background: rgba(5, 7, 12, .44);
 }
 
 .editor-toolbar {
@@ -251,7 +251,7 @@ h1 {
   overflow: auto;
   background:
     linear-gradient(180deg, rgba(85,243,255,.035), transparent 28%),
-    rgba(5, 7, 11, .76);
+    rgba(5, 7, 11, .38);
 }
 
 .line {
@@ -344,4 +344,31 @@ h1 {
   .workspace {
     height: calc(100% - 156px);
   }
+}
+
+
+/* Stronger glass effect across inner panels */
+.topbar,
+.password-panel,
+.sidebar,
+.editor-panel,
+.editor-toolbar,
+.editor,
+.statusbar {
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
+.topbar,
+.editor-toolbar,
+.statusbar {
+  background: rgba(8, 11, 18, 0.34);
+}
+
+.password-row input {
+  background: rgba(6, 8, 13, 0.52);
+}
+
+.file-item.active {
+  background: linear-gradient(90deg, rgba(255,79,216,.18), rgba(85,243,255,.08));
 }
