@@ -152,7 +152,11 @@ function render() {
       hint.className = "line-editor-hint";
       hint.textContent = "ENTER = SAVE · ESC = CANCEL";
 
-      body.append(input, hint);
+      body.append(input);
+
+      const footer = document.createElement("div");
+      footer.className = "line-editor-footer";
+
       main.append(lineNumber, body);
 
       const actions = document.createElement("div");
@@ -170,6 +174,15 @@ function render() {
       const cancelButton = document.createElement("button");
       cancelButton.textContent = "CANCEL";
       cancelButton.type = "button";
+      
+      actions.append(
+          addButton,
+          deleteButton,
+          cancelButton
+      );
+      
+      footer.append(actions, hint);
+      body.append(footer);
 
       function saveAndClose() {
         const mutable = getEditableLinesForActiveFile();
@@ -209,7 +222,7 @@ function render() {
         render();
       });
 
-      row.append(main, actions);
+      row.append(main);
       editor.appendChild(row);
 
       setTimeout(() => {

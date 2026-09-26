@@ -570,8 +570,8 @@ h1 {
 
 .line.editing {
   display: block;
-  margin: 6px 14px 10px 14px;
-  padding: 12px;
+  margin: 4px 14px 6px 14px;
+  padding: 8px 12px;
   border: 1px solid rgba(85,243,255,.35);
   background: rgba(6, 10, 16, .72);
   box-shadow:
@@ -608,10 +608,27 @@ h1 {
 }
 
 .line-editor-actions {
+  margin: 0;
   display: flex;
   gap: 8px;
-  margin-top: 9px;
   flex-wrap: wrap;
+}
+
+.line-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 1px;
+}
+
+.line-editor-hint {
+  margin: 0;
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--cyan);
 }
 
 .line-editor-actions button {
@@ -641,14 +658,14 @@ h1 {
 
 .line-editor-main {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
 }
 
 .line-editor-number {
   color: #49606e;
-  text-align: right;
+  text-align: left;
   padding-top: 10px;
   user-select: none;
 }
@@ -657,17 +674,12 @@ h1 {
   min-width: 0;
 }
 
-.line-editor-hint {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: .08em;
-}
-
 .line-editor-actions {
   margin-left: 54px;
-  margin-top: 9px;
+  margin-top: 6px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 5;
 }
