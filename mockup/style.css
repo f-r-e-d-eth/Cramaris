@@ -45,12 +45,17 @@ body::before {
   width: calc(100vw - 48px);
   height: calc(100vh - 48px);
   margin: 24px auto;
+
+  display: flex;
+  flex-direction: column;
+
   border: 1px solid rgba(85, 243, 255, 0.34);
   background: rgb(4 6 11 / var(--glass-alpha));
   box-shadow:
     0 0 0 1px rgba(255,79,216,.08),
     0 0 35px rgba(85,243,255,.08),
     0 0 70px rgba(255,79,216,.05);
+
   backdrop-filter: blur(14px) saturate(115%);
   overflow: hidden;
 }
@@ -135,7 +140,8 @@ h1 {
 .workspace {
   display: grid;
   grid-template-columns: 250px 1fr;
-  height: calc(100% - 131px);
+
+  flex: 1;
   min-height: 0;
 }
 
@@ -145,6 +151,7 @@ h1 {
   background: linear-gradient(180deg, rgb(12 15 22 / 0.08), rgb(7 9 15 / 0.08));
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .section-heading {
@@ -192,6 +199,7 @@ h1 {
 
 .sidebar-spacer {
   flex: 1;
+  min-height: 50px;
 }
 
 .action-button,
@@ -344,10 +352,6 @@ h1 {
   .password-panel {
     padding: 12px 20px;
   }
-
-  .workspace {
-    height: calc(100% - 121px);
-  }
 }
 
 
@@ -380,7 +384,8 @@ h1 {
 
 .appearance-control {
   margin: 0 0 14px;
-  padding: 12px;
+  margin-bottom: 6px;
+  padding: 9px;
   border: 1px solid rgba(85,243,255,.18);
   background: rgba(5, 8, 13, .24);
 }
