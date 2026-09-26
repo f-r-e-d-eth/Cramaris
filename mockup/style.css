@@ -683,3 +683,12 @@ h1 {
   position: relative;
   z-index: 5;
 }
+
+
+.empty-vault {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  border: 1px dashed rgba(85,243,255,.18);
+  text-align: center;
+}
