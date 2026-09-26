@@ -469,7 +469,7 @@ h1 {
   background: transparent;
   color: var(--cyan);
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   letter-spacing: .08em;
   cursor: pointer;
   text-align: right;
@@ -479,4 +479,17 @@ h1 {
 .clock-display:hover {
   color: #ffffff;
   text-shadow: 0 0 12px rgba(85,243,255,.65);
+}
+
+
+.crypto-toggle {
+  min-width: 92px;
+  color: var(--magenta);
+  border-color: rgba(255,79,216,.45);
+}
+
+.crypto-toggle.active {
+  color: #5dffa0;
+  border-color: rgba(93,255,160,.45);
+  box-shadow: 0 0 12px rgba(93,255,160,.08);
 }
