@@ -134,13 +134,26 @@ function render() {
     if (editingLineIndex === index) {
       row.classList.add("editing");
 
-      const header = document.createElement("div");
-      header.className = "line-editor-header";
-      header.innerHTML = "<span>EDIT LINE " + (index + 1) + "</span><span>ENTER = SAVE · ESC = CANCEL</span>";
+      const main = document.createElement("div");
+      main.className = "line-editor-main";
+
+      const lineNumber = document.createElement("div");
+      lineNumber.className = "line-editor-number";
+      lineNumber.textContent = index + 1;
+
+      const body = document.createElement("div");
+      body.className = "line-editor-body";
 
       const input = document.createElement("textarea");
       input.className = "line-editor-input";
       input.value = text;
+
+      const hint = document.createElement("div");
+      hint.className = "line-editor-hint";
+      hint.textContent = "ENTER = SAVE · ESC = CANCEL";
+
+      body.append(input, hint);
+      main.append(lineNumber, body);
 
       const actions = document.createElement("div");
       actions.className = "line-editor-actions";
@@ -196,7 +209,7 @@ function render() {
         render();
       });
 
-      row.append(header, input, actions);
+      row.append(main, actions);
       editor.appendChild(row);
 
       setTimeout(() => {
