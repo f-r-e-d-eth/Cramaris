@@ -256,6 +256,80 @@ def decrypt_file_lines(path, password):
     return result
 
 
+
+PREFERENCES_FILE = ".endecrypt.json"
+
+DEFAULT_PREFERENCES = {
+    "defaults": {
+        "background": "dark",
+        "glass": 20,
+        "color": "#55f3ff",
+    },
+    "files": {},
+    "ui": {
+        "crypto_enabled": True,
+        "clock_mode": 0,
+    },
+}
+
+
+def get_preferences_path():
+    return get_vault_dir() / PREFERENCES_FILE
+
+
+def load_preferences():
+    path = get_preferences_path()
+
+    if not path.exists():
+        return json.loads(json.dumps(DEFAULT_PREFERENCES))
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return json.loads(json.dumps(DEFAULT_PREFERENCES))
+
+    preferences = json.loads(json.dumps(DEFAULT_PREFERENCES))
+
+    if isinstance(data, dict):
+        if isinstance(data.get("defaults"), dict):
+            preferences["defaults"].update(data["defaults"])
+
+        if isinstance(data.get("files"), dict):
+            preferences["files"] = data["files"]
+
+        if isinstance(data.get("ui"), dict):
+            preferences["ui"].update(data["ui"])
+
+    return preferences
+
+
+def save_preferences(preferences):
+    path = get_preferences_path()
+    path.write_text(
+        json.dumps(
+            preferences,
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+
+
+def valid_hex_color(value):
+    if not isinstance(value, str):
+        return False
+
+    if len(value) != 7 or not value.startswith("#"):
+        return False
+
+    try:
+        int(value[1:], 16)
+    except ValueError:
+        return False
+
+    return True
+
+
 @app.get("/")
 def index():
     get_vault_dir()
@@ -423,6 +497,75 @@ def crypt_line(filename):
         "ok": True,
         "lines": len(raw_lines),
     })
+
+
+
+@app.get("/api/preferences")
+def get_preferences():
+    return jsonify(load_preferences())
+
+
+@app.put("/api/preferences")
+def put_preferences():
+    data = request.get_json(silent=True) or {}
+    preferences = load_preferences()
+
+    defaults = data.get("defaults")
+    if isinstance(defaults, dict):
+        if "background" in defaults and isinstance(defaults["background"], str):
+            preferences["defaults"]["background"] = defaults["background"]
+
+        if "glass" in defaults:
+            try:
+                glass = int(defaults["glass"])
+            except (TypeError, ValueError):
+                glass = preferences["defaults"]["glass"]
+            preferences["defaults"]["glass"] = max(0, min(100, glass))
+
+        if "color" in defaults and valid_hex_color(defaults["color"]):
+            preferences["defaults"]["color"] = defaults["color"]
+
+    files = data.get("files")
+    if isinstance(files, dict):
+        for filename, file_preferences in files.items():
+            if not isinstance(filename, str) or not isinstance(file_preferences, dict):
+                continue
+
+            current = preferences["files"].get(filename, {}).copy()
+
+            if "background" in file_preferences and isinstance(file_preferences["background"], str):
+                current["background"] = file_preferences["background"]
+
+            if "glass" in file_preferences:
+                try:
+                    glass = int(file_preferences["glass"])
+                except (TypeError, ValueError):
+                    glass = preferences["defaults"]["glass"]
+                current["glass"] = max(0, min(100, glass))
+
+            if "color" in file_preferences and valid_hex_color(file_preferences["color"]):
+                current["color"] = file_preferences["color"]
+
+            preferences["files"][filename] = current
+
+    ui = data.get("ui")
+    if isinstance(ui, dict):
+        if "crypto_enabled" in ui:
+            preferences["ui"]["crypto_enabled"] = bool(ui["crypto_enabled"])
+
+        if "clock_mode" in ui:
+            try:
+                clock_mode = int(ui["clock_mode"])
+            except (TypeError, ValueError):
+                clock_mode = 0
+            preferences["ui"]["clock_mode"] = clock_mode % 4
+
+    try:
+        save_preferences(preferences)
+    except OSError as error:
+        return jsonify({"error": str(error)}), 500
+
+    return jsonify(preferences)
 
 
 @app.get("/vault-image/<path:filename>")
