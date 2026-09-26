@@ -23,6 +23,15 @@ async function loadVault() {
     activeFile = vaultFiles.length ? vaultFiles[0].name : null;
   }
 
+  if (activeFile && !demoFiles[activeFile]) {
+    try {
+      await loadRealFile(activeFile);
+    } catch (error) {
+      console.error(error);
+      statusText.textContent = error.message;
+    }
+  }
+
   renderFileList();
   refreshBackgroundOptions();
   loadPreferences();
@@ -54,9 +63,19 @@ function renderFileList() {
 
     button.append(name, info);
 
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       activeFile = file.name;
       editingLineIndex = null;
+
+      if (!demoFiles[activeFile]) {
+        try {
+          await loadRealFile(activeFile);
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = error.message;
+        }
+      }
+
       renderFileList();
       loadPreferences();
       render();
@@ -115,7 +134,38 @@ const demoFiles = {
 };
 
 const editedFiles = {};
+const realFileLines = {};
 let editingLineIndex = null;
+
+async function loadRealFile(filename) {
+  const response = await fetch("/api/file/" + encodeURIComponent(filename));
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not load file");
+  }
+
+  realFileLines[filename] = data.lines || [];
+  delete editedFiles[filename];
+}
+
+async function saveRealFile(filename, lines) {
+  const response = await fetch("/api/file/" + encodeURIComponent(filename), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ lines })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Could not save file");
+  }
+
+  realFileLines[filename] = [...lines];
+}
 
 function getEditableLinesForActiveFile() {
   if (!editedFiles[activeFile]) {
@@ -177,11 +227,7 @@ function getVisibleLines() {
   const file = demoFiles[activeFile];
 
   if (!file) {
-    const source = [
-      "Real vault file detected: " + activeFile,
-      "File contents will be connected in Step 3.",
-      "For now Step 2 only proves real folder scanning and selection."
-    ];
+    const source = realFileLines[activeFile] || [];
 
     if (!cryptoEnabled) {
       return {
@@ -191,8 +237,12 @@ function getVisibleLines() {
       };
     }
 
+    const placeholder = source.length
+      ? source
+      : ["Encrypted mode for real files will be connected in Step 4."];
+
     return {
-      lines: source.map(line => pseudoGibberish(line, combinedCredential)),
+      lines: placeholder.map(line => pseudoGibberish(line, combinedCredential)),
       knownProfile: false,
       plainMode: false
     };
@@ -286,17 +336,29 @@ function render() {
       footer.append(actions, hint);
       body.append(footer);
 
-      function saveAndClose() {
+      async function saveAndClose() {
         const mutable = getEditableLinesForActiveFile();
         mutable[index] = input.value;
+
+        if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
+          try {
+            await saveRealFile(activeFile, mutable);
+            await loadVault();
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = error.message;
+            return;
+          }
+        }
+
         editingLineIndex = null;
         render();
       }
 
-      input.addEventListener("keydown", event => {
+      input.addEventListener("keydown", async event => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
-          saveAndClose();
+          await saveAndClose();
         } else if (event.key === "Escape") {
           event.preventDefault();
           editingLineIndex = null;
@@ -304,17 +366,41 @@ function render() {
         }
       });
 
-      addButton.addEventListener("click", () => {
+      addButton.addEventListener("click", async () => {
         const mutable = getEditableLinesForActiveFile();
         mutable[index] = input.value;
         mutable.splice(index + 1, 0, "");
+
+        if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
+          try {
+            await saveRealFile(activeFile, mutable);
+            await loadVault();
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = error.message;
+            return;
+          }
+        }
+
         editingLineIndex = index + 1;
         render();
       });
 
-      deleteButton.addEventListener("click", () => {
+      deleteButton.addEventListener("click", async () => {
         const mutable = getEditableLinesForActiveFile();
         mutable.splice(index, 1);
+
+        if (!cryptoEnabled && activeFile && !demoFiles[activeFile]) {
+          try {
+            await saveRealFile(activeFile, mutable);
+            await loadVault();
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = error.message;
+            return;
+          }
+        }
+
         editingLineIndex = null;
         render();
       });
@@ -435,6 +521,7 @@ chooseFolderButton.addEventListener("click", async () => {
   activeFile = null;
   editingLineIndex = null;
   Object.keys(editedFiles).forEach(key => delete editedFiles[key]);
+  Object.keys(realFileLines).forEach(key => delete realFileLines[key]);
 
   await loadVault();
 });
