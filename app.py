@@ -5,18 +5,18 @@ import json
 import os
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 
 BASE_DIR = Path(__file__).resolve().parent
-MOCKUP_DIR = BASE_DIR / "mockup"
 DEFAULT_VAULT_DIR = BASE_DIR / "vault"
 
-CONFIG_DIR = Path.home() / ".config" / "endecrypt"
+CONFIG_DIR = Path.home() / ".config" / "cramaris"
 CONFIG_FILE = CONFIG_DIR / "config.json"
+LEGACY_CONFIG_FILE = Path.home() / ".config" / "endecrypt" / "config.json"
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
-IGNORED_NAMES = {".endecrypt.json"}
+IGNORED_NAMES = {".cramaris.json", ".endecrypt.json"}
 IGNORED_EXTENSIONS = {".py", ".pyc"}
 
 ALPHABET = (
@@ -33,11 +33,13 @@ app = Flask(__name__)
 
 
 def load_config():
-    if not CONFIG_FILE.exists():
+    path = CONFIG_FILE if CONFIG_FILE.exists() else LEGACY_CONFIG_FILE
+
+    if not path.exists():
         return {}
 
     try:
-        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
 
@@ -173,7 +175,7 @@ def validate_plaintext(text):
         if char not in CHAR_TO_NUM:
             raise ValueError(
                 f"Unsupported character {char!r}. "
-                "Encrypted lines may only use the configured EnDeCrypt alphabet."
+                "Encrypted lines may only use the configured Cramaris alphabet."
             )
 
 
@@ -257,7 +259,8 @@ def decrypt_file_lines(path, password):
 
 
 
-PREFERENCES_FILE = ".endecrypt.json"
+PREFERENCES_FILE = ".cramaris.json"
+LEGACY_PREFERENCES_FILE = ".endecrypt.json"
 
 DEFAULT_PREFERENCES = {
     "defaults": {
@@ -279,6 +282,10 @@ def get_preferences_path():
 
 def load_preferences():
     path = get_preferences_path()
+
+    if not path.exists():
+        legacy_path = get_vault_dir() / LEGACY_PREFERENCES_FILE
+        path = legacy_path if legacy_path.exists() else path
 
     if not path.exists():
         return json.loads(json.dumps(DEFAULT_PREFERENCES))
@@ -333,7 +340,7 @@ def valid_hex_color(value):
 @app.get("/")
 def index():
     get_vault_dir()
-    return send_from_directory(MOCKUP_DIR, "index.html")
+    return render_template("index.html")
 
 
 @app.route("/api/vault", methods=["GET", "POST"])
@@ -381,13 +388,13 @@ def create_file():
         return jsonify({"error": "Hidden file names are reserved."}), 400
 
     if filename in IGNORED_NAMES:
-        return jsonify({"error": "That file name is reserved by EnDeCrypt."}), 400
+        return jsonify({"error": "That file name is reserved by Cramaris."}), 400
 
     if Path(filename).suffix.lower() in IMAGE_EXTENSIONS:
         return jsonify({"error": "Image extensions are reserved for backgrounds."}), 400
 
     if Path(filename).suffix.lower() in IGNORED_EXTENSIONS:
-        return jsonify({"error": "That file extension is ignored by EnDeCrypt."}), 400
+        return jsonify({"error": "That file extension is ignored by Cramaris."}), 400
 
     vault_dir = get_vault_dir()
     path = vault_dir / filename
@@ -613,10 +620,6 @@ def vault_image(filename):
     vault_dir = get_vault_dir()
     return send_from_directory(vault_dir, filename)
 
-
-@app.get("/<path:filename>")
-def mockup_file(filename):
-    return send_from_directory(MOCKUP_DIR, filename)
 
 
 if __name__ == "__main__":
