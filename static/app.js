@@ -370,6 +370,7 @@ function render() {
       const input = document.createElement("textarea");
       input.className = "line-editor-input";
       input.value = text;
+      const originalText = text;
 
       const hint = document.createElement("div");
       hint.className = "line-editor-hint";
@@ -408,20 +409,24 @@ function render() {
       body.append(footer);
 
       async function saveAndClose() {
-        const mutable = getEditableLinesForActiveFile();
-        mutable[index] = input.value;
+        const changed = input.value !== originalText;
 
-        try {
-          if (cryptoEnabled) {
-            await cryptLineAction("update", index, input.value);
-          } else {
-            await saveRealFile(activeFile, mutable);
+        if (changed) {
+          const mutable = getEditableLinesForActiveFile();
+          mutable[index] = input.value;
+
+          try {
+            if (cryptoEnabled) {
+              await cryptLineAction("update", index, input.value);
+            } else {
+              await saveRealFile(activeFile, mutable);
+            }
+            await loadVault();
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = error.message;
+            return;
           }
-          await loadVault();
-        } catch (error) {
-          console.error(error);
-          statusText.textContent = error.message;
-          return;
         }
 
         editingLineIndex = null;
@@ -440,13 +445,19 @@ function render() {
       });
 
       addButton.addEventListener("click", async () => {
+        const changed = input.value !== originalText;
         const mutable = getEditableLinesForActiveFile();
-        mutable[index] = input.value;
+
+        if (changed) {
+          mutable[index] = input.value;
+        }
         mutable.splice(index + 1, 0, "");
 
         try {
           if (cryptoEnabled) {
-            await cryptLineAction("update", index, input.value);
+            if (changed) {
+              await cryptLineAction("update", index, input.value);
+            }
             await cryptLineAction("insert", index + 1, "");
           } else {
             await saveRealFile(activeFile, mutable);
