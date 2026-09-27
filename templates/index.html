@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cramaris</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">LOCAL VAULT // LIVE DECRYPT</div>
+        <div class="title-row">
+          <h1>Cramaris</h1>
+          <div id="activeFilename" class="title-filename">secret.bla</div>
+        </div>
+      </div>
+      <div class="vault-info">
+        <div id="vaultPath" class="vault-path">~/Cramaris/vault</div>
+        <button id="clockDisplay" class="clock-display" type="button" title="Click to change clock mode">10:09</button>
+      </div>
+    </header>
+
+    <section class="password-panel">
+      <div class="password-grid">
+        <div class="password-field">
+          <label for="masterPassword">Master Password</label>
+          <div class="password-row">
+            <input id="masterPassword" type="password" value="master" autocomplete="off">
+            <button id="toggleMasterPassword" class="ghost-button" type="button">SHOW</button>
+          </div>
+        </div>
+
+        <div class="password-field key-field">
+          <label for="secondaryKey">Key</label>
+          <div class="password-row">
+            <input id="secondaryKey" type="password" value="apple" autocomplete="off">
+            <button id="toggleSecondaryKey" class="ghost-button" type="button">SHOW</button>
+            <button id="cryptoToggle" class="ghost-button crypto-toggle active" type="button">CRYPT ON</button>
+          </div>
+        </div>
+      </div>
+      <div class="hint">Changing either field updates the visible interpretation immediately.</div>
+    </section>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <div class="section-heading">FILES</div>
+        <div id="fileList" class="file-list">
+          <div class="empty-vault">Loading vault...</div>
+        </div>
+
+        <div class="sidebar-spacer"></div>
+
+        <button id="newFileButton" class="action-button">+ NEW FILE</button>
+        <button id="chooseFolderButton" class="action-button secondary">CHOOSE FOLDER</button>
+      </aside>
+
+      <section class="editor-panel">
+        <div id="editor" class="editor"></div>
+
+        <footer class="statusbar">
+          <div class="status-left">
+            <span><span class="status-dot"></span> READY</span>
+            <span id="statusText">Password profile: apple</span>
+          </div>
+
+          <div class="status-appearance">
+            <div class="status-glass">
+              <span>GLASS</span>
+              <input id="transparencySlider" type="range" min="0" max="90" value="20">
+              <span id="transparencyValue">20%</span>
+            </div>
+
+            <button id="backgroundButton" class="status-button" type="button">
+              BACKGROUND
+            </button>
+
+            <label class="status-color" title="Text and file color">
+              <span>COLOR</span>
+              <input id="contentColor" type="color" value="#55f3ff">
+            </label>
+          </div>
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
