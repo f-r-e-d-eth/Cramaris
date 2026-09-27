@@ -1,10 +1,10 @@
-# EnDeCrypt
+# Cramaris
 
-EnDeCrypt is a local Python/Flask text editor with optional experimental line-by-line encryption.
+Cramaris is a local Python/Flask text editor with optional experimental line-by-line encryption.
 
 The project is built around one unusual idea: every line is encrypted independently, and there is deliberately no password-validity check. A wrong Master Password / Key combination therefore produces other characters from the allowed alphabet instead of a "wrong password" message.
 
-> **Important:** EnDeCrypt is an experimental / educational project. It intentionally does not use authenticated encryption and should not be treated as a replacement for established security tools.
+> **Important:** Cramaris is an experimental / educational project. It intentionally does not use authenticated encryption and should not be treated as a replacement for established security tools.
 
 ## Current application
 
@@ -25,7 +25,7 @@ Current features include:
 - malformed encrypted-line handling without crashing the rest of the document;
 - backgrounds loaded from images in the selected vault;
 - per-file background, glass/transparency and text color;
-- persisted vault preferences in `.endecrypt.json`;
+- persisted vault preferences in `.cramaris.json`;
 - several clock display modes.
 
 ## Quick start
@@ -33,8 +33,8 @@ Current features include:
 Clone the repository:
 
 ```bash
-git clone git@github.com:f-r-e-d-eth/EnDeCrypt.git
-cd EnDeCrypt
+git clone git@github.com:f-r-e-d-eth/Cramaris.git
+cd Cramaris
 ```
 
 Create a virtual environment:
@@ -50,7 +50,7 @@ Install the dependencies:
 python3 -m pip install -r requirements.txt
 ```
 
-Start EnDeCrypt:
+Start Cramaris:
 
 ```bash
 python3 app.py
@@ -67,17 +67,17 @@ To stop the server, press `Ctrl+C` in the terminal.
 When starting it again later:
 
 ```bash
-cd ~/EnDeCrypt
+cd ~/Cramaris
 source .venv/bin/activate
 python3 app.py
 ```
 
 ## Vault folder
 
-By default EnDeCrypt uses:
+By default Cramaris uses:
 
 ```text
-~/EnDeCrypt/vault
+~/Cramaris/vault
 ```
 
 Use **CHOOSE FOLDER** in the UI to select another directory.
@@ -85,23 +85,23 @@ Use **CHOOSE FOLDER** in the UI to select another directory.
 The last selected vault is remembered in:
 
 ```text
-~/.config/endecrypt/config.json
+~/.config/cramaris/config.json
 ```
 
 The selected vault can contain:
 
 - editable text/encrypted files;
 - background images such as PNG, JPG, JPEG, WEBP and GIF;
-- the automatically created `.endecrypt.json` preference file.
+- the automatically created `.cramaris.json` preference file.
 
-Images and EnDeCrypt support files are not shown as editable documents.
+Images and Cramaris support files are not shown as editable documents.
 
 ## Preferences
 
 Each vault stores UI preferences in:
 
 ```text
-.endecrypt.json
+.cramaris.json
 ```
 
 These include:
@@ -114,7 +114,7 @@ These include:
 
 The Master Password and Key are **not** stored.
 
-If a configured background image is removed, EnDeCrypt falls back to the dark background.
+If a configured background image is removed, Cramaris falls back to the dark background.
 
 ## Editing
 
@@ -146,11 +146,11 @@ or:
 ideas.txt
 ```
 
-EnDeCrypt creates an empty file in the currently selected vault and selects it.
+Cramaris creates an empty file in the currently selected vault and selects it.
 
 ## CRYPT OFF
 
-With `CRYPT OFF`, EnDeCrypt behaves like a normal text editor.
+With `CRYPT OFF`, Cramaris behaves like a normal text editor.
 
 Changes are written directly as UTF-8 text.
 
@@ -159,7 +159,7 @@ Changes are written directly as UTF-8 text.
 With `CRYPT ON`, the Master Password and Key are combined internally as:
 
 ```text
-Master Password + "\0" + Key
+Master Password + Key
 ```
 
 Each line is stored independently in the form:
@@ -173,7 +173,7 @@ The current implementation uses:
 - PBKDF2-HMAC-SHA256 for password-to-key derivation;
 - a 16-byte random nonce per line;
 - HMAC-SHA256 based keystream generation;
-- modular arithmetic over the restricted EnDeCrypt character alphabet.
+- modular arithmetic over the restricted Cramaris character alphabet.
 
 Editing one encrypted line only replaces that line with a newly encrypted record and a new nonce. The other encrypted lines remain unchanged.
 
@@ -200,22 +200,12 @@ Characters outside this set cannot currently be saved in encrypted mode.
 
 ## Legacy CLI
 
-The repository still contains `EnDeCrypt.py`, the original command-line prototype used to develop and test the line-based encryption concept.
+The repository still contains `Cramaris.py`, the original command-line prototype used to develop and test the line-based encryption concept.
 
 The Flask application in `app.py` is now the primary interface.
 
-## Development branches
+## Development
 
-The working GUI application was developed on:
+`main` is the normal starting point for future development.
 
-```text
-feature/real-app
-```
-
-The earlier visual prototype is preserved on:
-
-```text
-feature/gui-mockup
-```
-
-Once the tested `feature/real-app` branch is merged, `main` should be considered the normal starting point for future development.
+The original GUI mockup has been removed; the live frontend now uses the standard Flask `templates/` and `static/` folders.
