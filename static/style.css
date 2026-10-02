@@ -787,3 +787,32 @@ h1 {
     justify-content: flex-end;
   }
 }
+
+
+/* Reliable editor scrolling */
+.app-shell {
+  min-height: 0;
+}
+
+.workspace {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-panel {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.file-list {
+  min-height: 0;
+  overflow-y: auto;
+}
