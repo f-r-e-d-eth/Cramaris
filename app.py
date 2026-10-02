@@ -15,6 +15,15 @@ CONFIG_DIR = Path.home() / ".config" / "cramaris"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 LEGACY_CONFIG_FILE = Path.home() / ".config" / "endecrypt" / "config.json"
 
+PRIVACY_HEARTBEAT_MAX_AGE = 15
+PRIVACY_RUNTIME_DIR = Path(
+    os.environ.get(
+        "XDG_RUNTIME_DIR",
+        f"/tmp/privacy-inhibit-{os.getuid()}",
+    )
+) / "privacy-inhibit"
+PRIVACY_HEARTBEAT_FILE = PRIVACY_RUNTIME_DIR / "cramaris.json"
+
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 IGNORED_NAMES = {".cramaris.json", ".endecrypt.json"}
 IGNORED_EXTENSIONS = {".py", ".pyc"}
@@ -613,6 +622,33 @@ def put_preferences():
         return jsonify({"error": str(error)}), 500
 
     return jsonify(preferences)
+
+
+@app.post("/api/privacy/heartbeat")
+def privacy_heartbeat():
+    PRIVACY_RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "protocol": "privacy-inhibit/1",
+        "app": "Cramaris",
+        "pid": os.getpid(),
+        "reason": "Sensitive content may be visible",
+        "updated_unix": __import__("time").time(),
+        "max_age_seconds": PRIVACY_HEARTBEAT_MAX_AGE,
+    }
+
+    temp_path = PRIVACY_HEARTBEAT_FILE.with_suffix(".tmp")
+    temp_path.write_text(
+        json.dumps(payload, indent=2),
+        encoding="utf-8",
+    )
+    temp_path.replace(PRIVACY_HEARTBEAT_FILE)
+
+    return jsonify({
+        "ok": True,
+        "path": str(PRIVACY_HEARTBEAT_FILE),
+        "max_age_seconds": PRIVACY_HEARTBEAT_MAX_AGE,
+    })
 
 
 @app.get("/vault-image/<path:filename>")
