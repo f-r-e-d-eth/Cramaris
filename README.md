@@ -26,7 +26,9 @@ Current features include:
 - backgrounds loaded from images in the selected vault;
 - per-file background, glass/transparency and text color;
 - persisted vault preferences in `.cramaris.json`;
-- several clock display modes.
+- several clock display modes;
+- independently scrollable document area;
+- generic local privacy-inhibit heartbeat for capture tools.
 
 ## Quick start
 
@@ -209,3 +211,22 @@ The Flask application in `app.py` is now the primary interface.
 `main` is the normal starting point for future development.
 
 The original GUI mockup has been removed; the live frontend now uses the standard Flask `templates/` and `static/` folders.
+
+
+## Privacy inhibit heartbeat
+
+Cramaris publishes a small local heartbeat while its browser page is visible. This is intended as a generic opt-in signal for screenshot tools, screen recorders, activity loggers, and similar local applications.
+
+The heartbeat file is written to:
+
+```text
+$XDG_RUNTIME_DIR/privacy-inhibit/cramaris.json
+```
+
+If `XDG_RUNTIME_DIR` is unavailable, Cramaris falls back to a per-user directory below `/tmp`.
+
+The JSON payload contains the protocol name, application name, process ID, reason, update timestamp, and a maximum age.
+
+Cramaris refreshes the heartbeat every five seconds while the page is visible. A consumer should treat the request as active only while the heartbeat timestamp is no older than 15 seconds. This makes stale files harmless after a browser or server crash.
+
+This is a project convention rather than an official freedesktop.org standard. Other applications may publish their own JSON file in the same directory, and capture tools can honor any fresh request they find there.
