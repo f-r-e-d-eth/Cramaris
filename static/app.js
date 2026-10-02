@@ -505,6 +505,10 @@ function render() {
       setTimeout(() => {
         input.focus();
         input.setSelectionRange(input.value.length, input.value.length);
+        row.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth"
+        });
       }, 0);
 
       return;
@@ -920,6 +924,44 @@ clockDisplay.addEventListener("click", async () => {
 
 updateClock();
 setInterval(updateClock, 1000);
+
+
+const PRIVACY_HEARTBEAT_INTERVAL_MS = 5000;
+let privacyHeartbeatTimer = null;
+
+async function sendPrivacyHeartbeat() {
+  if (document.visibilityState !== "visible") {
+    return;
+  }
+
+  try {
+    await fetch("/api/privacy/heartbeat", {
+      method: "POST",
+      keepalive: true
+    });
+  } catch (error) {
+    console.warn("Privacy heartbeat failed:", error);
+  }
+}
+
+function updatePrivacyHeartbeat() {
+  if (privacyHeartbeatTimer) {
+    clearInterval(privacyHeartbeatTimer);
+    privacyHeartbeatTimer = null;
+  }
+
+  if (document.visibilityState === "visible") {
+    sendPrivacyHeartbeat();
+    privacyHeartbeatTimer = setInterval(
+      sendPrivacyHeartbeat,
+      PRIVACY_HEARTBEAT_INTERVAL_MS
+    );
+  }
+}
+
+document.addEventListener("visibilitychange", updatePrivacyHeartbeat);
+window.addEventListener("focus", updatePrivacyHeartbeat);
+updatePrivacyHeartbeat();
 
 
 loadVault().catch(error => {
