@@ -17,12 +17,6 @@ LEGACY_CONFIG_FILE = Path.home() / ".config" / "endecrypt" / "config.json"
 
 PRIVACY_HEARTBEAT_MAX_AGE = 15
 PRIVACY_RUNTIME_DIR = Path(
-    os.environ.get("XDG_RUNTIME_DIR", f"/tmp/privacy-inhibit-{os.getuid()}")
-) / "privacy-inhibit"
-PRIVACY_HEARTBEAT_FILE = PRIVACY_RUNTIME_DIR / "cramaris.json"
-
-PRIVACY_HEARTBEAT_MAX_AGE = 15
-PRIVACY_RUNTIME_DIR = Path(
     os.environ.get(
         "XDG_RUNTIME_DIR",
         f"/tmp/privacy-inhibit-{os.getuid()}",
@@ -670,5 +664,5 @@ if __name__ == "__main__":
     app.run(
         host="127.0.0.1",
         port=5000,
-        debug=True,
+        debug=False,
     )
