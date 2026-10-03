@@ -143,7 +143,6 @@ function renderFileList() {
   updateFileListColors();
 }
 
-const demoFiles = {};
 
 const editedFiles = {};
 const realFileLines = {};
@@ -264,31 +263,6 @@ const newFileButton = document.getElementById("newFileButton");
 
 let cryptoEnabled = true;
 
-function getCombinedCredential() {
-  return masterPasswordInput.value + "\0" + secondaryKeyInput.value;
-}
-
-function getProfileKey() {
-  return secondaryKeyInput.value;
-}
-
-function pseudoGibberish(text, password) {
-  const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/!.,:;()[]{}_?=@#$%&";
-  let seed = 0;
-
-  for (const char of password + text) {
-    seed = (seed * 31 + char.charCodeAt(0)) >>> 0;
-  }
-
-  let output = "";
-
-  for (let i = 0; i < Math.max(text.length, 12); i++) {
-    seed = (1664525 * seed + 1013904223) >>> 0;
-    output += alphabet[seed % alphabet.length];
-  }
-
-  return output;
-}
 
 function getVisibleLines() {
   if (!activeFile) {
@@ -553,16 +527,6 @@ editor.addEventListener("dblclick", async event => {
   await appendBlankLineAtEnd();
 });
 
-
-document.querySelectorAll(".file-item").forEach(button => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".file-item").forEach(item => item.classList.remove("active"));
-    button.classList.add("active");
-    activeFile = button.dataset.file;
-    editingLineIndex = null;
-    render();
-  });
-});
 
 function scheduleDecryptRefresh() {
   delete editedFiles[activeFile];
@@ -866,12 +830,6 @@ backgroundButton.addEventListener("click", () => {
 
 contentColor.addEventListener("input", () => applyAppearance());
 transparencySlider.addEventListener("input", savePreferences);
-
-document.querySelectorAll(".file-item").forEach(button => {
-  button.addEventListener("click", () => {
-    setTimeout(loadPreferences, 0);
-  });
-});
 
 const clockDisplay = document.getElementById("clockDisplay");
 let clockMode = 0;
