@@ -202,7 +202,7 @@ Characters outside this set cannot currently be saved in encrypted mode.
 
 ## Legacy CLI
 
-The repository still contains `Cramaris.py`, the original command-line prototype used to develop and test the line-based encryption concept.
+The original command-line prototype is preserved as `legacy/Cramaris_cli.py` for reference.
 
 The Flask application in `app.py` is now the primary interface.
 
@@ -230,3 +230,10 @@ The JSON payload contains the protocol name, application name, process ID, reaso
 Cramaris refreshes the heartbeat every five seconds while the page is visible. A consumer should treat the request as active only while the heartbeat timestamp is no older than 15 seconds. This makes stale files harmless after a browser or server crash.
 
 This is a project convention rather than an official freedesktop.org standard. Other applications may publish their own JSON file in the same directory, and capture tools can honor any fresh request they find there.
+
+
+## License
+
+Cramaris is released under the MIT License: use it, modify it, redistribute it, or build on it as you like. The software is provided **as is**, without warranty, and the authors are not liable for problems or damages arising from its use.
+
+See `LICENSE` for the full terms.
