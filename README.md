@@ -164,11 +164,14 @@ With `CRYPT ON`, the Master Password and Key are combined internally as:
 Master Password + Key
 ```
 
-Each line is stored independently in the form:
+Each line is stored independently in one of these forms:
 
 ```text
 base64_nonce|ciphertext
+base64_nonce~ciphertext
 ```
+
+For now, both separators decrypt and display identically. The `~` separator is reserved for a future masked-line feature.
 
 The current implementation uses:
 
