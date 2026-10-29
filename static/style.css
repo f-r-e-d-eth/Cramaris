@@ -816,3 +816,43 @@ h1 {
   min-height: 0;
   overflow-y: auto;
 }
+
+
+/* Masked encrypted lines */
+.line-content-row {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.line-content-row .line-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.line-text.masked-line {
+  letter-spacing: .12em;
+  color: var(--muted);
+  user-select: none;
+}
+
+.masked-line-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.masked-line-actions button {
+  border: 1px solid rgba(85,243,255,.30);
+  background: rgba(85,243,255,.03);
+  color: var(--cyan);
+  padding: 3px 7px;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.masked-line-actions button:hover {
+  background: rgba(85,243,255,.10);
+}
