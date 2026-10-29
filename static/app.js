@@ -119,6 +119,7 @@ function renderFileList() {
     button.addEventListener("click", async () => {
       activeFile = file.name;
       editingLineIndex = null;
+      revealedMaskedLines.clear();
 
       try {
         if (cryptoEnabled) {
@@ -213,6 +214,12 @@ async function cryptLineAction(action, index, text = "") {
   }
 
   await loadEncryptedFile(activeFile);
+}
+
+async function setLineMasked(index, masked) {
+  await cryptLineAction(masked ? "mask" : "unmask", index);
+  revealedMaskedLines.delete(activeFile + "\\0" + index);
+  render();
 }
 
 async function loadRealFile(filename) {
@@ -520,45 +527,78 @@ function render() {
 
     lineBody.appendChild(content);
 
-    if (isMasked) {
+    if (cryptoEnabled && !lineError) {
       const actions = document.createElement("div");
       actions.className = "masked-line-actions";
 
-      const copyButton = document.createElement("button");
-      copyButton.type = "button";
-      copyButton.textContent = "COPY";
-      copyButton.addEventListener("click", async event => {
-        event.stopPropagation();
+      if (isMasked) {
+        const copyButton = document.createElement("button");
+        copyButton.type = "button";
+        copyButton.textContent = "COPY";
+        copyButton.addEventListener("click", async event => {
+          event.stopPropagation();
 
-        try {
-          await navigator.clipboard.writeText(text);
-          const previous = copyButton.textContent;
-          copyButton.textContent = "COPIED";
-          setTimeout(() => {
-            copyButton.textContent = previous;
-          }, 1200);
-        } catch (error) {
-          console.error(error);
-          statusText.textContent = "Could not copy masked line";
-        }
-      });
+          try {
+            await navigator.clipboard.writeText(text);
+            const previous = copyButton.textContent;
+            copyButton.textContent = "COPIED";
+            setTimeout(() => {
+              copyButton.textContent = previous;
+            }, 1200);
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = "Could not copy masked line";
+          }
+        });
 
-      const showButton = document.createElement("button");
-      showButton.type = "button";
-      showButton.textContent = isRevealed ? "HIDE" : "SHOW";
-      showButton.addEventListener("click", event => {
-        event.stopPropagation();
+        const showButton = document.createElement("button");
+        showButton.type = "button";
+        showButton.textContent = isRevealed ? "HIDE" : "SHOW";
+        showButton.addEventListener("click", event => {
+          event.stopPropagation();
 
-        if (revealedMaskedLines.has(revealKey)) {
-          revealedMaskedLines.delete(revealKey);
-        } else {
-          revealedMaskedLines.add(revealKey);
-        }
+          if (revealedMaskedLines.has(revealKey)) {
+            revealedMaskedLines.delete(revealKey);
+          } else {
+            revealedMaskedLines.add(revealKey);
+          }
 
-        render();
-      });
+          render();
+        });
 
-      actions.append(copyButton, showButton);
+        const unmaskButton = document.createElement("button");
+        unmaskButton.type = "button";
+        unmaskButton.textContent = "UNMASK";
+        unmaskButton.addEventListener("click", async event => {
+          event.stopPropagation();
+
+          try {
+            await setLineMasked(index, false);
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = error.message;
+          }
+        });
+
+        actions.append(copyButton, showButton, unmaskButton);
+      } else {
+        const maskButton = document.createElement("button");
+        maskButton.type = "button";
+        maskButton.textContent = "MASK";
+        maskButton.addEventListener("click", async event => {
+          event.stopPropagation();
+
+          try {
+            await setLineMasked(index, true);
+          } catch (error) {
+            console.error(error);
+            statusText.textContent = error.message;
+          }
+        });
+
+        actions.append(maskButton);
+      }
+
       lineBody.appendChild(actions);
     }
 
@@ -746,6 +786,7 @@ chooseFolderButton.addEventListener("click", async () => {
 
   activeFile = null;
   editingLineIndex = null;
+  revealedMaskedLines.clear();
   Object.keys(editedFiles).forEach(key => delete editedFiles[key]);
   Object.keys(realFileLines).forEach(key => delete realFileLines[key]);
   Object.keys(decryptedFileLines).forEach(key => delete decryptedFileLines[key]);
