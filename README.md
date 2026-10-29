@@ -171,7 +171,7 @@ base64_nonce|ciphertext
 base64_nonce~ciphertext
 ```
 
-For now, both separators decrypt and display identically. The `~` separator is reserved for a future masked-line feature.
+Both separators currently decrypt and display identically. Cramaris now also reports `~` lines internally as masked metadata and shows the detected masked-line count in the status bar. Actual visual masking is intentionally not enabled yet.
 
 The current implementation uses:
 
