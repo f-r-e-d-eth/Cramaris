@@ -255,15 +255,19 @@ def decrypt_file_lines(path, password):
     result = []
 
     for index, raw_line in enumerate(raw_lines, start=1):
+        masked = "~" in raw_line and "|" not in raw_line
+
         try:
             result.append({
                 "text": decrypt_line(raw_line, password),
                 "error": None,
+                "masked": masked,
             })
         except (ValueError, UnicodeError) as error:
             result.append({
                 "text": f"[ENCRYPTION ERROR: line {index}: {error}]",
                 "error": str(error),
+                "masked": masked,
             })
 
     return result
