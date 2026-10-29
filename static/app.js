@@ -148,6 +148,7 @@ const editedFiles = {};
 const realFileLines = {};
 const decryptedFileLines = {};
 const decryptErrors = {};
+const decryptedLineMasks = {};
 let editingLineIndex = null;
 let decryptRequestSerial = 0;
 let credentialTimer = null;
@@ -182,6 +183,7 @@ async function loadEncryptedFile(filename) {
 
   decryptedFileLines[filename] = (data.lines || []).map(line => line.text);
   decryptErrors[filename] = (data.lines || []).map(line => line.error);
+  decryptedLineMasks[filename] = (data.lines || []).map(line => line.masked === true);
   delete editedFiles[filename];
 }
 
@@ -287,6 +289,7 @@ function getVisibleLines() {
   return {
     lines: decryptedFileLines[activeFile] || [],
     errors: decryptErrors[activeFile] || [],
+    masked: decryptedLineMasks[activeFile] || [],
     plainMode: false
   };
 }
@@ -513,9 +516,19 @@ function render() {
     statusText.textContent = "Plain text mode — encryption disabled";
   } else {
     const errorCount = (result.errors || []).filter(Boolean).length;
-    statusText.textContent = errorCount
-      ? errorCount + " malformed encrypted line" + (errorCount === 1 ? "" : "s")
-      : "Encrypted view — " + result.lines.length + " line" + (result.lines.length === 1 ? "" : "s");
+    const maskedCount = (result.masked || []).filter(Boolean).length;
+
+    if (errorCount) {
+      statusText.textContent =
+        errorCount + " malformed encrypted line" + (errorCount === 1 ? "" : "s");
+    } else {
+      statusText.textContent =
+        "Encrypted view — " +
+        result.lines.length +
+        " line" +
+        (result.lines.length === 1 ? "" : "s") +
+        (maskedCount ? " · " + maskedCount + " masked" : "");
+    }
   }
 }
 
@@ -632,6 +645,7 @@ newFileButton.addEventListener("click", async () => {
   delete realFileLines[activeFile];
   delete decryptedFileLines[activeFile];
   delete decryptErrors[activeFile];
+  delete decryptedLineMasks[activeFile];
 
   await loadVault();
 });
