@@ -856,3 +856,12 @@ h1 {
 .masked-line-actions button:hover {
   background: rgba(85,243,255,.10);
 }
+
+
+.line-content-row .masked-line-actions {
+  opacity: .72;
+}
+
+.line-content-row:hover .masked-line-actions {
+  opacity: 1;
+}
