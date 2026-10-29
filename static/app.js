@@ -149,6 +149,7 @@ const realFileLines = {};
 const decryptedFileLines = {};
 const decryptErrors = {};
 const decryptedLineMasks = {};
+const revealedMaskedLines = new Set();
 let editingLineIndex = null;
 let decryptRequestSerial = 0;
 let credentialTimer = null;
@@ -495,14 +496,79 @@ function render() {
     number.className = "line-number";
     number.textContent = index + 1;
 
-    const content = document.createElement("div");
     const lineError = result.errors && result.errors[index];
-    content.className = "line-text" + (lineError ? " encryption-error" : "");
-    content.textContent = text || " ";
+    const isMasked =
+      cryptoEnabled &&
+      !lineError &&
+      result.masked &&
+      result.masked[index] === true;
+    const revealKey = activeFile + "\\0" + index;
+    const isRevealed = isMasked && revealedMaskedLines.has(revealKey);
 
-    row.append(number, content);
+    const lineBody = document.createElement("div");
+    lineBody.className = "line-content-row";
+
+    const content = document.createElement("div");
+    content.className =
+      "line-text" +
+      (lineError ? " encryption-error" : "") +
+      (isMasked && !isRevealed ? " masked-line" : "");
+    content.textContent =
+      isMasked && !isRevealed
+        ? "••••••••"
+        : (text || " ");
+
+    lineBody.appendChild(content);
+
+    if (isMasked) {
+      const actions = document.createElement("div");
+      actions.className = "masked-line-actions";
+
+      const copyButton = document.createElement("button");
+      copyButton.type = "button";
+      copyButton.textContent = "COPY";
+      copyButton.addEventListener("click", async event => {
+        event.stopPropagation();
+
+        try {
+          await navigator.clipboard.writeText(text);
+          const previous = copyButton.textContent;
+          copyButton.textContent = "COPIED";
+          setTimeout(() => {
+            copyButton.textContent = previous;
+          }, 1200);
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = "Could not copy masked line";
+        }
+      });
+
+      const showButton = document.createElement("button");
+      showButton.type = "button";
+      showButton.textContent = isRevealed ? "HIDE" : "SHOW";
+      showButton.addEventListener("click", event => {
+        event.stopPropagation();
+
+        if (revealedMaskedLines.has(revealKey)) {
+          revealedMaskedLines.delete(revealKey);
+        } else {
+          revealedMaskedLines.add(revealKey);
+        }
+
+        render();
+      });
+
+      actions.append(copyButton, showButton);
+      lineBody.appendChild(actions);
+    }
+
+    row.append(number, lineBody);
 
     row.addEventListener("dblclick", () => {
+      if (isMasked && !isRevealed) {
+        return;
+      }
+
       editingLineIndex = index;
       getEditableLinesForActiveFile();
       render();
