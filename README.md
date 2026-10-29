@@ -171,7 +171,7 @@ base64_nonce|ciphertext
 base64_nonce~ciphertext
 ```
 
-Both separators currently decrypt and display identically. Cramaris now also reports `~` lines internally as masked metadata and shows the detected masked-line count in the status bar. Actual visual masking is intentionally not enabled yet.
+`|` marks a normally displayed encrypted line and `~` marks a masked encrypted line. Masked lines show a fixed mask in the UI and provide COPY, SHOW/HIDE, and UNMASK controls. Normal encrypted lines provide a MASK control. MASK/UNMASK changes only the separator character; it does not re-encrypt the line or change its nonce/ciphertext.
 
 The current implementation uses:
 
@@ -180,7 +180,7 @@ The current implementation uses:
 - HMAC-SHA256 based keystream generation;
 - modular arithmetic over the restricted Cramaris character alphabet.
 
-Editing one encrypted line only replaces that line with a newly encrypted record and a new nonce. The other encrypted lines remain unchanged.
+Editing one encrypted line only replaces that line with a newly encrypted record and a new nonce. The other encrypted lines remain unchanged. If the edited line was masked, it remains masked after saving.
 
 ## Wrong passwords and malformed lines
 
