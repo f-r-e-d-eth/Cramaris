@@ -526,7 +526,31 @@ def crypt_line(filename):
             if index < 0 or index >= len(raw_lines):
                 return jsonify({"error": "Line index out of range."}), 400
 
-            raw_lines[index] = encrypt_line(str(text), password)
+            was_masked = "~" in raw_lines[index] and "|" not in raw_lines[index]
+            encrypted_line = encrypt_line(str(text), password)
+
+            if was_masked:
+                encrypted_line = encrypted_line.replace("|", "~", 1)
+
+            raw_lines[index] = encrypted_line
+
+        elif action == "mask":
+            if index < 0 or index >= len(raw_lines):
+                return jsonify({"error": "Line index out of range."}), 400
+
+            if "|" not in raw_lines[index]:
+                return jsonify({"error": "Line is not a normal encrypted record."}), 400
+
+            raw_lines[index] = raw_lines[index].replace("|", "~", 1)
+
+        elif action == "unmask":
+            if index < 0 or index >= len(raw_lines):
+                return jsonify({"error": "Line index out of range."}), 400
+
+            if "~" not in raw_lines[index]:
+                return jsonify({"error": "Line is not a masked encrypted record."}), 400
+
+            raw_lines[index] = raw_lines[index].replace("~", "|", 1)
 
         elif action == "insert":
             if index < 0 or index > len(raw_lines):
