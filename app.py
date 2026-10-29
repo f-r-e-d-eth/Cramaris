@@ -208,10 +208,12 @@ def encrypt_line(text, password):
 
 
 def decrypt_line(line, password):
-    if "|" not in line:
-        raise ValueError("missing nonce separator '|'")
-
-    nonce_text, encrypted = line.split("|", 1)
+    if "|" in line:
+        nonce_text, encrypted = line.split("|", 1)
+    elif "~" in line:
+        nonce_text, encrypted = line.split("~", 1)
+    else:
+        raise ValueError("missing nonce separator '|' or '~'")
 
     if not nonce_text:
         raise ValueError("missing nonce")
