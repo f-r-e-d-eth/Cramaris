@@ -129,6 +129,8 @@ Inside the line editor:
 - `Enter` saves;
 - `Esc` cancels;
 - **+ NEW LINE** inserts a new line below;
+- **↑ UP** moves the current line one position up;
+- **↓ DOWN** moves the current line one position down;
 - **DELETE** deletes the current line;
 - **CANCEL** exits without saving.
 
@@ -180,7 +182,7 @@ The current implementation uses:
 - HMAC-SHA256 based keystream generation;
 - modular arithmetic over the restricted Cramaris character alphabet.
 
-Editing one encrypted line only replaces that line with a newly encrypted record and a new nonce. The other encrypted lines remain unchanged. If the edited line was masked, it remains masked after saving.
+Editing one encrypted line only replaces that line with a newly encrypted record and a new nonce. The other encrypted lines remain unchanged. If the edited line was masked, it remains masked after saving. Moving a line up or down moves the complete stored record unchanged, so its nonce, ciphertext, and masked state travel with it.
 
 ## Wrong passwords and malformed lines
 
