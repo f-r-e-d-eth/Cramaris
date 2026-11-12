@@ -375,6 +375,16 @@ function render() {
       addButton.textContent = "+ NEW LINE";
       addButton.type = "button";
 
+      const upButton = document.createElement("button");
+      upButton.textContent = "↑ UP";
+      upButton.type = "button";
+      upButton.disabled = index === 0;
+
+      const downButton = document.createElement("button");
+      downButton.textContent = "↓ DOWN";
+      downButton.type = "button";
+      downButton.disabled = index === lines.length - 1;
+
       const deleteButton = document.createElement("button");
       deleteButton.textContent = "DELETE";
       deleteButton.type = "button";
@@ -386,6 +396,8 @@ function render() {
       
       actions.append(
           addButton,
+          upButton,
+          downButton,
           deleteButton,
           cancelButton
       );
@@ -456,6 +468,58 @@ function render() {
 
         editingLineIndex = index + 1;
         render();
+      });
+
+      async function moveCurrentLine(direction) {
+        const changed = input.value !== originalText;
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+        if (targetIndex < 0 || targetIndex >= lines.length) {
+          return;
+        }
+
+        try {
+          if (cryptoEnabled) {
+            if (changed) {
+              await cryptLineAction("update", index, input.value);
+            }
+
+            await cryptLineAction(
+              direction === "up" ? "move_up" : "move_down",
+              index
+            );
+          } else {
+            const mutable = [...(realFileLines[activeFile] || [])];
+
+            if (changed) {
+              mutable[index] = input.value;
+            }
+
+            [mutable[index], mutable[targetIndex]] = [
+              mutable[targetIndex],
+              mutable[index]
+            ];
+
+            await saveRealFile(activeFile, mutable);
+          }
+
+          await loadVault();
+        } catch (error) {
+          console.error(error);
+          statusText.textContent = error.message;
+          return;
+        }
+
+        editingLineIndex = targetIndex;
+        render();
+      }
+
+      upButton.addEventListener("click", async () => {
+        await moveCurrentLine("up");
+      });
+
+      downButton.addEventListener("click", async () => {
+        await moveCurrentLine("down");
       });
 
       deleteButton.addEventListener("click", async () => {
