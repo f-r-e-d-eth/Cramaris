@@ -552,6 +552,24 @@ def crypt_line(filename):
 
             raw_lines[index] = raw_lines[index].replace("~", "|", 1)
 
+        elif action == "move_up":
+            if index <= 0 or index >= len(raw_lines):
+                return jsonify({"error": "Line cannot be moved up."}), 400
+
+            raw_lines[index - 1], raw_lines[index] = (
+                raw_lines[index],
+                raw_lines[index - 1],
+            )
+
+        elif action == "move_down":
+            if index < 0 or index >= len(raw_lines) - 1:
+                return jsonify({"error": "Line cannot be moved down."}), 400
+
+            raw_lines[index], raw_lines[index + 1] = (
+                raw_lines[index + 1],
+                raw_lines[index],
+            )
+
         elif action == "insert":
             if index < 0 or index > len(raw_lines):
                 return jsonify({"error": "Line index out of range."}), 400
